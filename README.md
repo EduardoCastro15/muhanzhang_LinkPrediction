@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # muhanzhang_LinkPrediction
 This repository provides Matlab implementation for method proposed in the paper "M. Zhang, Y. Chen, Weisfeiler-Lehman Neural Machine for Link Prediction, KDD 2017".
 
@@ -123,4 +122,3 @@ For any questions regarding the paper, the code, the installation and so on, ple
 
 Muhan Zhang, muhan@wustl.edu
 2/15/2017
->>>>>>> dcd440b (Initial Commit)
