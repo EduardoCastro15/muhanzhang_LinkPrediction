@@ -38,9 +38,8 @@ for f_idx = 1:length(foodweb_names)
     %%Load data
     addpath(genpath('utils'));
     
-    K = 10;
     ratioTrain = 0.9;
-    numOfExperiment = 10;
+    numOfExperiment = 50;
     datapath = 'data/foodwebs_mat/';
     thisdatapath = strcat(datapath, dataname, '.mat');
 
@@ -71,7 +70,8 @@ for f_idx = 1:length(foodweb_names)
         disp(['Processing with k = ', num2str(K)]);
 
         % Start the parallel pool
-        poolobj = parpool('local', min(7, feature('numcores')));
+        % poolobj = parpool('local', min(7, feature('numcores')));
+        poolobj = parpool(feature('numcores'));
         
         parfor ith_experiment = 1:numOfExperiment
             % Initialize temporary variables inside the parfor loop

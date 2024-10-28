@@ -1,68 +1,78 @@
-function [ train test ] = DivideNet( net, ratioTrain)      %problem found, double select test link because of non-triangular matrix
-%%划分训练集和测试集，保证训练集连通
-    net = triu(net) - diag(diag(net));  % convert to upper triangular matrix
-    num_testlinks = ceil((1-ratioTrain) * nnz(net));      
-    % 确定测试集的边数目
-    [xindex, yindex] = find(net);  linklist = [xindex yindex];    
-    % 将网络（邻接矩阵）中所有的边找出来，存入linklist  
-    clear xindex yindex;  
-    % 为每条边设置标志位，判断是否能删除
-    test = sparse(size(net,1),size(net,2));                 
-    while (nnz(test) < num_testlinks)               %For power dataset, maximum 636 test links <660 expected. 
-        if length(linklist) <= 2
-            break;
-        end
-        %---- 随机选择一条边
-        index_link = ceil(rand(1) * length(linklist));
-        
-        uid1 = linklist(index_link,1); 
-        uid2 = linklist(index_link,2);    
-        net(uid1,uid2) = 0;  
-        
-        
-          %% 
-        %---- 判断所选边两端节点uid1和uid2是否可达，若可达则可放入测试集，否则重新挑选一条边
-         
-        % 将这条边从网络中挖去用以判断挖掉后的网络是否还连通
-        tempvector = net(uid1,:);
-        % 取出uid1一步可达的点，构建成一维向量
-        sign = 0;  
-        % 标记此边是否可以被移除，sign=0表示不可； sign=1表示可以
-        uid1TOuid2 = tempvector * net + tempvector;        
-        % uid1TOuid2表示二步内可达的点
-        if uid1TOuid2(uid2) > 0
-            sign = 1;               
-            % 二步即可达
-        else
-            while (nnz(spones(uid1TOuid2) - tempvector) ~=0)   
-            % 直到可达的点到达稳定状态，仍然不能到达uid2，此边就不能被删除
-                tempvector = spones(uid1TOuid2);
-                uid1TOuid2 = tempvector * net + tempvector;    
-                % 此步的uid1TOuid2表示K步内可达的点
-                if uid1TOuid2(uid2) > 0
-                    sign = 1;      
-                     % 某步内可达
-                    break;
-                end
-            end
-        end 
-        % 结束-判断uid1是否可达uid2
-        
-        sign = 1;  % changed... keep all selected links in test, no matter whether connect
+function [ train test ] = DivideNet( net, ratioTrain)
+% Usage: Divide the network into training and testing sets
+% --Input--
+% - net: adjacency matrix representing the network
+% - ratioTrain: proportion of edges to keep in the training set
+% --Output--
+% - train: adjacency matrix of training links (1: link, 0: otherwise)
+% - test: adjacency matrix of testing links (1: link, 0: otherwise)
+%
+%  *problem identified: duplicate test links due to non-triangular matrix
+%%
 
-        %% 
-        
-        %----若此边可删除，则将之放入测试集中，并将此边从linklist中移除
-        if sign == 1 %此边可以删除
-            linklist(index_link,:) = []; 
-            test(uid1,uid2) = 1;
-        else
-            linklist(index_link,:) = [];
-            net(uid1,uid2) = 1;   
-        end   
-        % 结束-判断此边是否可以删除并作相应处理
-    end   
-    % 结束（while）-测试集中的边选取完毕
-    train = net + net';  test = test + test';
-    % 返回为训练集和测试集
+% Convert adjacency matrix to upper triangular form (no self-loops)
+net = triu(net) - diag(diag(net));
+
+% Calculate the number of edges for the test set
+num_testlinks = ceil((1-ratioTrain) * nnz(net));
+
+% Identify all edges in the network and store them in linklist
+[xindex, yindex] = find(net);
+linklist = [xindex yindex];
+
+clear xindex yindex;  % Remove unnecessary variables
+
+% Initialize the test set as a sparse matrix of the same size as net
+test = sparse(size(net,1), size(net,2));
+
+% Randomly select edges to add to the test set until the desired count is reached
+while (nnz(test) < num_testlinks)
+    if length(linklist) <= 2
+        break;
+    end
+
+    % Randomly choose an edge from the link list
+    index_link = ceil(rand(1) * length(linklist));
+
+    % Identify the nodes connected by the selected edge
+    uid1 = linklist(index_link, 1);
+    uid2 = linklist(index_link, 2);
+    net(uid1, uid2) = 0;  % Temporarily remove the edge from the network
+
+    %% Check if nodes uid1 and uid2 remain reachable
+    tempvector = net(uid1, :);  % Get nodes reachable from uid1 in one step
+    sign = 0;  % Default: edge cannot be removed
+
+    % Calculate reachability within two steps
+    uid1TOuid2 = tempvector * net + tempvector;
+    if uid1TOuid2(uid2) > 0
+        sign = 1;  % Mark as reachable
+    else
+        % Check reachability for more than two steps until stable
+        while (nnz(spones(uid1TOuid2) - tempvector) ~= 0)
+            tempvector = spones(uid1TOuid2);
+            uid1TOuid2 = tempvector * net + tempvector;
+            if uid1TOuid2(uid2) > 0
+                sign = 1;  % Mark as reachable
+                break;
+            end
+        end
+    end
+
+    % Modified: Allow all selected edges in the test set, regardless of connectivity
+    sign = 1;
+
+    %% Add edge to the test set or restore it in the training network
+    if sign == 1  % Edge can be deleted
+        linklist(index_link, :) = [];  % Remove edge from linklist
+        test(uid1, uid2) = 1;  % Mark as test edge
+    else
+        linklist(index_link, :) = [];
+        net(uid1, uid2) = 1;  % Restore edge in the network
+    end
+end
+
+% Generate the symmetric training and testing adjacency matrices
+train = net + net';
+test = test + test';
 end
