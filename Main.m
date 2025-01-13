@@ -6,7 +6,7 @@
 %rng(100);
 
 %% Load food web list from a CSV file or a predefined list
-foodweb_list = readtable('data/foodwebs_mat/foodweb_metrics.csv');
+foodweb_list = readtable('data/foodwebs_mat/foodweb_metrics_small.csv');
 foodweb_names = foodweb_list.Foodweb;
 
 %% Set up logging
@@ -16,87 +16,99 @@ if ~exist(log_dir, 'dir')
     mkdir(log_dir);
 end
 
+% Start parallel pool (initialize once for all datasets)
+if isempty(gcp('nocreate'))
+    poolobj = parpool(feature('numcores'));
+    % parpool('local', str2double(getenv('NSLOTS')));
+end
+
 % Iterate over all food webs in the list
 for f_idx = 1:length(foodweb_names)
     dataname = strvcat(foodweb_names{f_idx});  % Get the current food web name
-
     log_file = strcat(log_dir, dataname, '.txt');  % Create a log file for each food web
+
+    % Check if log file already exists and contains data
+    if isfile(log_file) && dir(log_file).bytes > 0
+        disp(['Skipping ', dataname, ' as it already has a log file.']);
+        continue;  % Skip to the next food web if the log file already exists and has content
+    end
+
     fileID = fopen(log_file, 'a');  % Open the log file for appending text
 
     % Set up diary to log command window output to a file
-    diary_file = strcat(terminal_log_dir, 'terminal_log_', dataname, '.txt');
+    diary_file = fullfile(terminal_log_dir, strcat('terminal_log_', dataname, '.txt'));
     diary(diary_file);  % Start logging to diary
     
     % Add a header to the log file if it doesn't exist
     if ftell(fileID) == 0  % Check if file is empty
-        fprintf(fileID, '|====================================================================================|\n');
-        fprintf(fileID, '|    Iteration   |      AUC       |  Time Elapsed  |Encoded subgraph|   Train ratio  |\n');
-        fprintf(fileID, '|                |                |   (hh:mm:ss)   |      (K)       |       %%        |\n');
-        fprintf(fileID, '|====================================================================================|\n');
+        fprintf(fileID, '|========================================================================================================================================================|\n');
+        fprintf(fileID, '|    Iteration   |      AUC       |  Time Elapsed  |Encoded subgraph|   Train ratio  |    Threshold   |    Precision   |     Recall     |     F1-Score   |\n');
+        fprintf(fileID, '|                |                |   (hh:mm:ss)   |      (K)       |       %%        |                |                |                |                |\n');
+        fprintf(fileID, '|========================================================================================================================================================|\n');
     end
     
     %%Load data
     addpath(genpath('utils'));
-    
-    ratioTrain = 0.9;
-    numOfExperiment = 50;
     datapath = 'data/foodwebs_mat/';
-    thisdatapath = strcat(datapath, dataname, '.mat');
+    thisdatapath = fullfile(datapath, strcat(dataname, '.mat'));
 
     % Check if the .mat file exists
     if ~isfile(thisdatapath)
         disp(['File not found: ', thisdatapath]);
-        continue;  % Skip this iteration if the file doesn't exist
+        fclose(fileID);
+        diary off;
+        continue;
     end
-    
-    tic;  % Start timing the whole script
+    load(thisdatapath, 'net');  % Load only 'net' variable to save memory
+    numOfExperiment = 50;
+    ratioTrain = 0.9;
     % method = [1, 2, 3, 4, 5, 6];  % 1: WLNM,  2: common-neighbor-based,  3: path-based, 4: random walk  5: latent-feature-based,  6: stochastic block model
     method = [1];
     num_in_each_method = [1, 13, 6, 13, 1, 1];  % how many algorithms in each type of method
     num_of_methods = sum(num_in_each_method(method));  % the total number of algorithms
     
-    auc_for_dataset = [];
     disp(['Processing dataset: ', dataname]);
-    
-    load(thisdatapath);
-    [n_rows, ~] = size(net);  % Get network size
-    
-    aucOfallPredictor = zeros(numOfExperiment, num_of_methods);
-    PredictorsName = [];
-    results_log = cell(numOfExperiment, 1);  % Pre-allocate a cell array to store log results
-    
-    % Loop over different values of k from 5 to 10
-    for K = 5:10
+
+    % Loop over values of k
+    for K = 5:15
         disp(['Processing with k = ', num2str(K)]);
 
-        % Start the parallel pool
-        % poolobj = parpool('local', min(7, feature('numcores')));
-        poolobj = parpool(feature('numcores'));
-        
+        % Pre-allocate cell array to store log entries for each experiment
+        log_entries = cell(numOfExperiment, 1);
+
         parfor ith_experiment = 1:numOfExperiment
             % Initialize temporary variables inside the parfor loop
-            tempauc = 0;  % Initialize to avoid clearing issues
-            iteration_start_time = tic;  % Start timing this iteration
-        
+            tempauc = 0;
+            iteration_start_time = tic;
+            
+            % Initialize the metrics within the parfor loop
+            best_threshold = 0;
+            best_precision = 0;
+            best_recall = 0;
+            best_f1_score = 0;
+
             ith_experiment
             if mod(ith_experiment, 10) == 0
                 tempcont = strcat(int2str(ith_experiment),'%... ');
                 disp(tempcont);
             end
-            
+
             % divide into train/test
             [train, test] = DivideNet(net,ratioTrain);
             train = sparse(train); test = sparse(test);
             train = spones(train + train'); test = spones(test + test');
-            ithAUCvector = []; Predictors = []; % for recording results
-    
+            
+            % Process methods
+            ithAUCvector = zeros(1, num_of_methods); % Pre-allocate space for AUC vector
+            Predictors = [];
+            
             % run link prediction methods
             %% Weisfeiler-Lehman Neural Machine (WLNM)
             if ismember(1, method)
                 disp('WLNM...');
-                tempauc = WLNM(train, test, K, ith_experiment);                  % WLNM
+                [tempauc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(train, test, K, ith_experiment);                  % WLNM
                 Predictors = [Predictors '%WLNM	'];
-                ithAUCvector = [ithAUCvector tempauc];
+                ithAUCvector(1) = tempauc;
             end
     
             %% Common Neighbor-based methods, 13 methods
@@ -252,52 +264,37 @@ for f_idx = 1:length(foodweb_names)
             
             %% Store AUC results for each experiment
             aucOfallPredictor(ith_experiment, :) = ithAUCvector;
-            PredictorsName = Predictors;
+            % PredictorsName = Predictors;
     
             % Measure time taken for this iteration
             iteration_time = toc(iteration_start_time);  % Time in seconds
-    
-            % Convert iteration_time (seconds) to hh:mm:ss format
-            hours = floor(iteration_time / 3600);
-            minutes = floor(mod(iteration_time, 3600) / 60);
-            seconds = floor(mod(iteration_time, 60));
-            elapsed_time_str = sprintf('%02d:%02d:%02d', hours, minutes, seconds);
-    
-            % Collect log information
-            results_log{ith_experiment} = {ith_experiment, tempauc, elapsed_time_str, K};
-        end
-        
-        % Close the parallel pool when done
-        if exist('poolobj', 'var')
-            delete(poolobj);
-        end
-    
-        % Log results after parallel execution
-        for i = 1:numOfExperiment
-            log_data = results_log{i};
-            fprintf(fileID, '|           %4d |       %8.4f |       %6s |         %6d |        %6d%% |\n', ...
-                log_data{1}, log_data{2}, log_data{3}, log_data{4}, ratioTrain * 100);
-        end
-    
-        % Write the results for this dataset
-        avg_auc = mean(aucOfallPredictor, 1);
-        auc_for_dataset = [auc_for_dataset, avg_auc];
-        var_auc = var(aucOfallPredictor, 0, 1);
-        
-        % Log summary results for the current dataset
-        disp(['Average AUC for k = ', num2str(K), ': ', num2str(avg_auc)]);
-        disp(['Variance: ', num2str(var_auc)]);
-        disp(['Dataset ', dataname, ' processed. AUC: ', num2str(avg_auc)]);
+            elapsed_time_str = datestr(seconds(iteration_time), 'HH:MM:SS');
 
+            % Store log entry in cell array
+            log_entries{ith_experiment} = sprintf('|           %4d |       %8.4f |       %6s |         %6d |        %6d%% |           %.2f |         %.4f |         %.4f |         %.4f |\n', ...
+                    ith_experiment, tempauc, elapsed_time_str, K, ratioTrain * 100, best_threshold, best_precision, best_recall, best_f1_score);
+        end
+
+        % Write accumulated log entries to file after the parfor loop
+        for i = 1:numOfExperiment
+            fprintf(fileID, '%s', log_entries{i});
+        end
     end
 
-    % Close the log file for this dataset
+    % Log summary results for the current dataset
+    avg_auc = mean(aucOfallPredictor, 1);
+    var_auc = var(aucOfallPredictor, 0, 1);
+    disp(['Average AUC for dataset ', dataname, ': ', num2str(avg_auc)]);
+    disp(['Variance: ', num2str(var_auc)]);
+    
+    % Clean up memory
     fclose(fileID);
-
-    % Stop logging for this dataset
     diary off;
+    clear net aucOfallPredictor; % Clear large variables after each dataset
 end
     
-elapsed_time = toc;  % Measure overall elapsed time
-disp(['Elapsed time: ', num2str(elapsed_time), ' seconds']);
+% Close parallel pool after all datasets
+if exist('poolobj', 'var')
+    delete(poolobj);
+end
 disp(['Execution finished at: ', datestr(now)]);
