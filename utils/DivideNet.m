@@ -1,4 +1,4 @@
-function [ train test ] = DivideNet( net, ratioTrain)
+function [train, test ] = DivideNet(net, ratioTrain)
 % Usage: Divide the network into training and testing sets
 % --Input--
 % - net: adjacency matrix representing the network
@@ -7,11 +7,12 @@ function [ train test ] = DivideNet( net, ratioTrain)
 % - train: adjacency matrix of training links (1: link, 0: otherwise)
 % - test: adjacency matrix of testing links (1: link, 0: otherwise)
 %
-%  *problem identified: duplicate test links due to non-triangular matrix
-%%
+%%  *problem identified: duplicate test links due to non-triangular matrix
+%  This function has been updated to support directed graphs without
+%  enforcing symmetry.
 
-% Convert adjacency matrix to upper triangular form (no self-loops)
-net = triu(net) - diag(diag(net));
+% Remove self-loops (if any)
+net = net - diag(diag(net));
 
 % Calculate the number of edges for the test set
 num_testlinks = ceil((1-ratioTrain) * nnz(net));
@@ -41,19 +42,19 @@ while (nnz(test) < num_testlinks)
 
     %% Check if nodes uid1 and uid2 remain reachable
     tempvector = net(uid1, :);  % Get nodes reachable from uid1 in one step
-    sign = 0;  % Default: edge cannot be removed
+    reachable = 0;  % Default: edge cannot be removed
 
     % Calculate reachability within two steps
     uid1TOuid2 = tempvector * net + tempvector;
     if uid1TOuid2(uid2) > 0
-        sign = 1;  % Mark as reachable
+        reachable = 1;  % Mark as reachable
     else
         % Check reachability for more than two steps until stable
         while (nnz(spones(uid1TOuid2) - tempvector) ~= 0)
             tempvector = spones(uid1TOuid2);
             uid1TOuid2 = tempvector * net + tempvector;
             if uid1TOuid2(uid2) > 0
-                sign = 1;  % Mark as reachable
+                reachable = 1;  % Mark as reachable
                 break;
             end
         end
@@ -63,16 +64,14 @@ while (nnz(test) < num_testlinks)
     sign = 1;
 
     %% Add edge to the test set or restore it in the training network
-    if sign == 1  % Edge can be deleted
+    if reachable == 1  % Edge can be deleted
         linklist(index_link, :) = [];  % Remove edge from linklist
         test(uid1, uid2) = 1;  % Mark as test edge
     else
-        linklist(index_link, :) = [];
         net(uid1, uid2) = 1;  % Restore edge in the network
     end
 end
 
 % Generate the symmetric training and testing adjacency matrices
-train = net + net';
-test = test + test';
+train = net;
 end

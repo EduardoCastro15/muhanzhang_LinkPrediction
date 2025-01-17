@@ -145,7 +145,7 @@ K = size(subgraph, 1);  % local variable
 % calculate initial colors based on geometric mean distance to the link
 % [dist_to_1, ~, ~] = graphshortestpath(sparse(subgraph), 1, 'Directed', false);
 % [dist_to_2, ~, ~] = graphshortestpath(sparse(subgraph), 2, 'Directed', false);
-G = graph(subgraph);  % Create a graph object from the adjacency matrix
+G = digraph(subgraph);  % Create a directed graph object
 dist_to_1 = distances(G, 1);  % Compute shortest paths from node 1
 dist_to_2 = distances(G, 2);  % Compute shortest paths from node 2
 
