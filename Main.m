@@ -6,7 +6,10 @@
 %rng(100);
 
 %% Configuration
-useParallel = true;  % Flag to enable or disable parallel pool
+useParallel = true;         % Flag to enable or disable parallel pool
+kRange = [10];              % Define the interval of K values to execute
+numOfExperiment = 10;
+ratioTrain = 0.9;
 
 %% Load food web list from a CSV file or a predefined list
 foodweb_list = readtable('data/foodwebs_mat/foodweb_metrics_small.csv');
@@ -66,13 +69,11 @@ for f_idx = 1:length(foodweb_names)
         continue;
     end
     load(thisdatapath, 'net');  % Load only 'net' variable to save memory
-    numOfExperiment = 10;
-    ratioTrain = 0.9;
 
     disp(['Processing dataset: ', dataname]);
 
     % Loop over values of k
-    for K = 5:6
+    for K = kRange
         disp(['Processing with k = ', num2str(K)]);
 
         % Pre-allocate cell array to store log entries for each experiment
