@@ -6,9 +6,9 @@
 %rng(100);
 
 %% Configuration
-useParallel = true;         % Flag to enable or disable parallel pool
-kRange = [10];              % Define the interval of K values to execute
-numOfExperiment = 10;
+useParallel = false;         % Flag to enable or disable parallel pool
+kRange = [15];              % Define the interval of K values to execute
+numOfExperiment = 1;
 ratioTrain = 0.9;
 
 %% Load food web list from a CSV file or a predefined list
@@ -69,6 +69,14 @@ for f_idx = 1:length(foodweb_names)
         continue;
     end
     load(thisdatapath, 'net');  % Load only 'net' variable to save memory
+
+    % Debugging: Check if the input graph is directed
+    disp('Debug: Checking input graph for symmetry (Main.m)...');
+    if isequal(net, net')  % Check if the matrix is symmetric
+        disp('Warning: Input graph is undirected (symmetric adjacency matrix).');
+    else
+        disp('Debug: Input graph is directed.');
+    end
 
     disp(['Processing dataset: ', dataname]);
 
@@ -131,6 +139,21 @@ function log_entry = processExperiment(ith_experiment, net, ratioTrain, K)
     [train, test] = DivideNet(net, ratioTrain);  % Ensure DivideNet works with directed graphs
     train = sparse(train);  % Ensure sparse format
     test = sparse(test);
+
+    % Debugging: Check if training and testing graphs are directed
+    disp('Debug: Checking training graph for symmetry (Main.m)...');
+    if isequal(train, train')  % Check if the matrix is symmetric
+        disp('Warning: Training graph is undirected (symmetric adjacency matrix).');
+    else
+        disp('Debug: Training graph is directed.');
+    end
+
+    disp('Debug: Checking testing graph for symmetry (Main.m)...');
+    if isequal(test, test')  % Check if the matrix is symmetric
+        disp('Warning: Testing graph is undirected (symmetric adjacency matrix).');
+    else
+        disp('Debug: Testing graph is directed.');
+    end
 
     % WLNM Method
     disp('WLNM...');

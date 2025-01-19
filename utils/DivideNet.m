@@ -8,11 +8,21 @@ function [train, test ] = DivideNet(net, ratioTrain)
 % - test: adjacency matrix of testing links (1: link, 0: otherwise)
 %
 %%  *problem identified: duplicate test links due to non-triangular matrix
-%  This function has been updated to support directed graphs without
-%  enforcing symmetry.
+%  This function has been updated to support directed graphs without enforcing symmetry.
+
+% Debugging: Check if the input graph is symmetric
+disp('Debug: Checking input graph for symmetry at the start of (DivideNet.m)...');
+if isequal(net, net')
+    disp('Warning: Input graph is undirected (symmetric adjacency matrix).');
+else
+    disp('Debug: Input graph is directed.');
+end
 
 % Remove self-loops (if any)
 net = net - diag(diag(net));
+
+% Debugging: Check if self-loops were correctly removed
+disp(['Debug: Number of self-loops removed: ', num2str(sum(diag(net) ~= 0))]);
 
 % Calculate the number of edges for the test set
 num_testlinks = ceil((1-ratioTrain) * nnz(net));
@@ -61,7 +71,7 @@ while (nnz(test) < num_testlinks)
     end
 
     % Modified: Allow all selected edges in the test set, regardless of connectivity
-    sign = 1;
+    reachable = 1;
 
     %% Add edge to the test set or restore it in the training network
     if reachable == 1  % Edge can be deleted
@@ -74,4 +84,20 @@ end
 
 % Generate the symmetric training and testing adjacency matrices
 train = net;
+
+% Debugging: Check if the training graph is symmetric
+disp('Debug: Checking training graph for symmetry (DivideNet.m)...');
+if isequal(train, train')
+    disp('Warning: Training graph is undirected (symmetric adjacency matrix).');
+else
+    disp('Debug: Training graph is directed.');
+end
+
+% Debugging: Check if the test graph is symmetric
+disp('Debug: Checking testing graph for symmetry (DivideNet.m)...');
+if isequal(test, test')
+    disp('Warning: Testing graph is undirected (symmetric adjacency matrix).');
+else
+    disp('Debug: Testing graph is directed.');
+end
 end
