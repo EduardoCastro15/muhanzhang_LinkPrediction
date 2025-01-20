@@ -1,0 +1,4 @@
+.DS_Store
+
+# Ignore large log files
+data/result/terminal_logs/*.txt
