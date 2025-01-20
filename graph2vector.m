@@ -1,16 +1,15 @@
 function [data, label] = graph2vector(pos, neg, A, K)
-%  Usage: to convert links' enclosing subgraphs (both pos
-%         and neg) into real vectors
+%  Usage: to convert links' enclosing subgraphs (both pos and neg) into real vectors
 %  --Input--
-%  -pos: indices of positive links
-%  -neg: indices of negative links
-%  -A: the observed graph's adjacency matrix from which to
-%      to extract subgraph features
-%  -K: the number of nodes in each link's subgraph
+%       -pos: indices of positive links
+%       -neg: indices of negative links
+%       -A: the observed graph's adjacency matrix from which to
+%           to extract subgraph features
+%       -K: the number of nodes in each link's subgraph
 %  --Output--
-%  -data: the constructed training data, each row is a
-%         link's vector representation
-%  -label: a column vector of links' labels
+%       -data: the constructed training data, each row is a
+%              link's vector representation
+%       -label: a column vector of links' labels
 %
 %  *author: Muhan Zhang, Washington University in St. Louis
 
@@ -25,13 +24,15 @@ label = [ones(pos_size, 1); zeros(neg_size, 1)];
 % Generate vector data
 d = K * (K - 1) / 2;  % dim of data vectors
 data = zeros(all_size, d);
+
 one_tenth = floor(all_size / 10);
 display('Subgraph Pattern Encoding Begins...')
 for i = 1: all_size
     ind = all(i, :);
     sample = subgraph2vector(ind, A, K);
     data(i, :) = sample;
-    %i/all_size  % display finer progress
+
+    % Display progress
     progress = i / one_tenth;
     if ismember(progress, [1:9])
         display(sprintf('Subgraph Pattern Encoding Progress %d0%%...', progress));
@@ -82,15 +83,23 @@ while 1
     end
 end
 
-% Calculate the link-weighted subgraph, each entry in the adjacency matrix is weighted by the inverse of its distance to the target link
+% Calculate the link-weighted subgraph without symmetrization
 links_ind = sub2ind(size(A), links(:, 1), links(:, 2));
-A_copy = A / (dist + 1);  % if a link between two existing nodes < dist+1, it must be in 'links'. The only links not in 'links' are the dist+1 links between some farthest nodes in 'nodes', so here we weight them by dist+1
+A_copy = A / (dist + 1);
 A_copy(links_ind) = 1 ./ links_dist;
-A_copy_u = max(triu(A_copy, 1), tril(A_copy, -1)');  % for links (i, j) and (j, i), keep the smallest dist
-A_copy = A_copy_u + A_copy_u';
-lweight_subgraph  = A_copy(nodes, nodes);
 
-% Calculate the graph labeling of the subgraph
+% Extract the link-weighted subgraph without symmetrizing
+lweight_subgraph = A_copy(nodes, nodes);
+
+% Debugging: Validate that subgraph is directed
+disp('Debug: Checking subgraph for symmetry (graph2vector.m)...');
+if isequal(subgraph, subgraph')
+    disp('Warning: Subgraph has become undirected (symmetric adjacency matrix).');
+else
+    disp('Debug: Subgraph is directed.');
+end
+
+% Generate enclosing subgraph's vector representation
 order = g_label(subgraph);
 if length(order) > K  % if size > K, keep only the top-K vertices and reorder
     order(K + 1: end) = [];
@@ -140,43 +149,60 @@ if nargin < 2
     p_mo = 7;  % default palette_wl
 end
 
+% Ensure directed graph object
+disp('Debug: Validating subgraph in g_label (graph2vector.m)...');
+if isequal(subgraph, subgraph')
+    disp('Warning: Subgraph has become undirected before g_label.');
+else
+    disp('Debug: Subgraph is directed before g_label.');
+end
+
 K = size(subgraph, 1);  % local variable
 
-% calculate initial colors based on geometric mean distance to the link
-% [dist_to_1, ~, ~] = graphshortestpath(sparse(subgraph), 1, 'Directed', false);
-% [dist_to_2, ~, ~] = graphshortestpath(sparse(subgraph), 2, 'Directed', false);
+% Graph Representation and Distance Calculation
 G = digraph(subgraph);  % Create a directed graph object
 dist_to_1 = distances(G, 1);  % Compute shortest paths from node 1
 dist_to_2 = distances(G, 2);  % Compute shortest paths from node 2
 
+% Handling Unreachable Nodes
 dist_to_1(isinf(dist_to_1)) = 2 * K;  % replace inf nodes (unreachable from 1 or 2) by an upperbound dist
 dist_to_2(isinf(dist_to_2)) = 2 * K;
+
+% Initial Vertex Coloring
 avg_dist = sqrt(dist_to_1 .* dist_to_2);  % use geometric mean as the average distance to the link
 [~, ~, avg_dist_colors] = unique(avg_dist);  % f mapping to initial colors
 
 % switch different graph labeling methods
 switch p_mo
-    case 1  % use classical wl, no initial colors
+    case 1
+        % use classical wl, no initial colors
         classes = wl_string_lexico(subgraph);
         order = canon(full(subgraph), classes)';
-    case 2  % use wl_hashing, no initial colors
+    case 2
+        % use wl_hashing, no initial colors
         classes = wl_hashing(subgraph);
         order = canon(full(subgraph), classes)';
-    case 3  % use classical wl, with initial colors
+    case 3
+        % use classical wl, with initial colors
         classes = wl_string_lexico(subgraph, avg_dist_colors);
         order = canon(full(subgraph), classes)';
-    case 4  % use wl_hashing, with initial colors
+    case 4
+        % use wl_hashing, with initial colors
         classes = wl_hashing(subgraph, avg_dist_colors);
         order = canon(full(subgraph), classes)';
-    case 5  % directly use nauty for canonical labeling
+    case 5
+        % directly use nauty for canonical labeling
         order = canon(full(subgraph), ones(K, 1))';
-    case 6  % no graph labeling, directly use the predefined order
+    case 6
+        % no graph labeling, directly use the predefined order
         order = [1: 1: K];
-    case 7  % palette_wl with initial colors, break ties by nauty
+    case 7
+        % palette_wl with initial colors, break ties by nauty
         classes = palette_wl(subgraph, avg_dist_colors);
         %classes = palette_wl(subgraph);  % no initial colors
         order = canon(full(subgraph), classes)';
-    case 8  % random labeling
+    case 8
+        % random labeling
         order = randperm(K);
 end
 end
