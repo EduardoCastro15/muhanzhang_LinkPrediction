@@ -1,6 +1,4 @@
-.DS_Store
-*/.DS_Store
-data/.DS_Store
+*.DS_Store
 
 # Ignore large log files
 data/result/terminal_logs/*.txt
