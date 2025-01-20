@@ -7,7 +7,7 @@
 
 %% Configuration
 useParallel = true;         % Flag to enable or disable parallel pool
-kRange = [10];              % Define the interval of K values to execute
+kRange = 5:15;              % Define the interval of K values to execute
 numOfExperiment = 50;
 ratioTrain = 0.9;
 
