@@ -1,24 +1,16 @@
 function [train_pos, train_neg, test_pos, test_neg] = sample_neg(train, test, k, portion, evaluate_on_all_unseen)
 %  Usage: to sample negative links for train and test datasets.
-%         When sampling negative train links, assume all testing
-%         links are known and thus sample negative train links
-%         only from other unknown links. Set evaluate_on_all_unseen
-%         to true to do link prediction on all links unseen during
-%         training.
 %  --Input--
-%  -train: half train positive adjacency matrix
-%  -test: half test positive adjacency matrix
-%  -k: how many times of negative links (w.r.t. pos links) to
-%      sample
-%  -portion: if specified, only a portion of the sampled train
-%            and test links be returned
-%  -evaluate_on_all_unseen: if true, will not randomly sample
-%                          negative testing links, but regard
-%                          all links unseen during training as
-%                          neg testing links; train negative links
-%                          are sampled in the original way
+%       -train: adjacency matrix of training links (directed)
+%       -test: adjacency matrix of testing links (directed)
+%       -k: number of negative links (relative to positive links) to sample
+%       -portion: fraction or number of links to sample
+%       -evaluate_on_all_unseen: if true, considers all unseen links as negative test links
 %  --Output--
-%  column indices for four datasets
+%       -train_pos: positive training links
+%       -train_neg: negative training links
+%       -test_pos: positive testing links
+%       -test_neg: negative testing links
 %%
 
 if nargin < 3
@@ -41,21 +33,40 @@ train_size = length(i);
 test_pos = [i, j];
 test_size = length(i);
 
+% Combine train and test matrices to get the full network
 if isempty(test)
     net = train;
 else
     net = train + test;
 end
 
-assert(max(max(net)) == 1);  % ensure positive train, test not overlap
+% Debugging: Validate that the combined network is directed
+disp('Debug: Checking combined network (net) for symmetry (sample_neg.m)...');
+if isequal(net, net')
+    disp('Warning: Combined network (net) has become undirected (symmetric adjacency matrix).');
+else
+    disp('Debug: Combined network (net) is directed.');
+end
+
+% Ensure positive train and test links do not overlap
+assert(max(max(net)) == 1, 'Error: Positive train and test links overlap.');
 
 % Get all negative links (links that don't exist in the network)
-neg_net = triu(-(net - 1), 1);
+neg_net = -(net - 1);  % Invert the adjacency matrix (1 -> 0, 0 -> 1)
+neg_net(eye(n) == 1) = 0;  % Remove self-loops
+
+% Debugging: Validate that neg_net is directed
+disp('Debug: Checking negative network (neg_net) for symmetry (sample_neg.m)...');
+if isequal(neg_net, neg_net')
+    disp('Warning: Negative network (neg_net) has become undirected.');
+else
+    disp('Debug: Negative network (neg_net) is directed.');
+end
+
 [i, j] = find(neg_net);
 neg_links = [i, j];
 
-%% Modification to workaround if the negative links are not enough. [START]
-% Check if we have enough negative links
+% Handle insufficient negative links
 total_neg_links_needed = k * (train_size + test_size);
 available_neg_links = size(neg_links, 1);
 
@@ -63,7 +74,6 @@ if available_neg_links < total_neg_links_needed
     warning('Not enough negative links available. Reducing the sample size.');
     k = available_neg_links / (train_size + test_size);
 end
-%% Modification to workaround if the negative links are not enough. [END]
 
 % Sample negative links
 if evaluate_on_all_unseen
@@ -79,7 +89,8 @@ else
     if k * (train_size + test_size) <= nlinks
         train_ind = ind(1: k * train_size);
         test_ind = ind(k * train_size + 1: k * train_size + k * test_size);
-    else  % if negative links not enough, divide them proportionally
+    else
+        % Divide proportionally if negative links are insufficient
         ratio = train_size / (train_size + test_size);
         train_ind = ind(1: floor(ratio * nlinks));
         test_ind = ind(floor(ratio * nlinks) + 1: end);
