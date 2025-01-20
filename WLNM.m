@@ -17,15 +17,61 @@ if nargin < 4
     ith_experiment = 1;
 end
 
-htrain = triu(train, 1);  % half train adjacency matrix
-htest = triu(test, 1);
+% Debugging: Check if the input graphs are directed
+disp('Debug: Checking training graph for symmetry at the start of (WLNM.m)...');
+if isequal(train, train')
+    disp('Warning: Training graph is undirected (symmetric adjacency matrix).');
+else
+    disp('Debug: Training graph is directed.');
+end
+
+disp('Debug: Checking testing graph for symmetry at the start of (WLNM.m)...');
+if isequal(test, test')
+    disp('Warning: Testing graph is undirected (symmetric adjacency matrix).');
+else
+    disp('Debug: Testing graph is directed.');
+end
+
+% Remove triu function: Use the entire adjacency matrix for directed graphs
+htrain = train;  % Use the full adjacency matrix
+htest = test;
+
+% Debugging: Check if upper triangular extraction has affected directionality
+disp('Debug: Checking symmetry of htrain (upper triangular training graph) (WLNM.m)...');
+if isequal(htrain, htrain')
+    disp('Warning: htrain has become undirected after triu operation.');
+else
+    disp('Debug: htrain is still directed.');
+end
+
+disp('Debug: Checking symmetry of htest (upper triangular testing graph)...');
+if isequal(htest, htest')
+    disp('Warning: htest has become undirected after triu operation.');
+else
+    disp('Debug: htest is still directed.');
+end
 
 % sample negative links for train and test sets
-
 [train_pos, train_neg, test_pos, test_neg] = sample_neg(htrain, htest, 2, 1, true);  % change the last argument to true to do link prediction on whole network
 
+% Convert graphs to feature vectors
 [train_data, train_label] = graph2vector(train_pos, train_neg, train, K);
 [test_data, test_label] = graph2vector(test_pos, test_neg, train, K);
+
+% Debugging: Check if train_pos, train_neg, test_pos, and test_neg are symmetric
+disp('Debug: Checking symmetry of train_pos (WLNM.m)...');
+if isequal(train_pos, train_pos')
+    disp('Warning: train_pos has become undirected.');
+else
+    disp('Debug: train_pos is directed.');
+end
+
+disp('Debug: Checking symmetry of test_pos (WLNM.m)...');
+if isequal(test_pos, test_pos')
+    disp('Warning: test_pos has become undirected.');
+else
+    disp('Debug: test_pos is directed.');
+end
 
 % train a model
 model = 3;
