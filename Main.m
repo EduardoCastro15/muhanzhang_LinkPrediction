@@ -68,9 +68,15 @@ for f_idx = 1:length(foodweb_names)
         diary off;
         continue;
     end
-    load(thisdatapath, 'net');  % Load only 'net' variable to save memory
+    
+    % Load net, species, and classification
+    load(thisdatapath, 'net', 'species', 'classification');
+
+    % Classify species
+    [consumers, resources] = ClassifySpecies(net, classification);
     
     disp(['Processing dataset: ', dataname]);
+    disp(['Consumers: ', num2str(length(consumers)), ' | Resources: ', num2str(length(resources))]);
 
     % Loop over values of k
     for K = kRange
@@ -104,7 +110,7 @@ for f_idx = 1:length(foodweb_names)
     % Clean up memory
     fclose(fileID);
     diary off;
-    clear net aucOfallPredictor; % Clear large variables after each dataset
+    clear net species classification consumers resources;  % Free memory
 end
     
 % Close parallel pool after all datasets
@@ -112,6 +118,7 @@ if useParallel && exist('poolobj', 'var')
     delete(poolobj);
 end
 disp(['Execution finished at: ', datestr(now)]);
+
 
 %% Helper Function for Experiment Processing
 function log_entry = processExperiment(ith_experiment, net, ratioTrain, K)
@@ -128,7 +135,7 @@ function log_entry = processExperiment(ith_experiment, net, ratioTrain, K)
     end
 
     % divide into train/test
-    [train, test] = DivideNet(net,ratioTrain);
+    [train, test] = DivideNet(net, ratioTrain);
     train = sparse(train); test = sparse(test);
     train = spones(train + train'); test = spones(test + test');
 
