@@ -127,10 +127,10 @@ function log_entry = processExperiment(ith_experiment, net, ratioTrain, K)
         disp([num2str(ith_experiment), '%... ']);
     end
 
-    % Divide into train/test without enforcing symmetry
-    [train, test] = DivideNet(net, ratioTrain);  % Ensure DivideNet works with directed graphs
-    train = sparse(train);  % Ensure sparse format
-    test = sparse(test);
+    % divide into train/test
+    [train, test] = DivideNet(net,ratioTrain);
+    train = sparse(train); test = sparse(test);
+    train = spones(train + train'); test = spones(test + test');
 
     % WLNM Method
     disp('WLNM...');
