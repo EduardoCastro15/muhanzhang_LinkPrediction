@@ -6,9 +6,9 @@
 %rng(100);
 
 %% Configuration
-useParallel = false;         % Flag to enable or disable parallel pool
-kRange = [15];              % Define the interval of K values to execute
-numOfExperiment = 1;
+useParallel = true;         % Flag to enable or disable parallel pool
+kRange = [10];              % Define the interval of K values to execute
+numOfExperiment = 50;
 ratioTrain = 0.9;
 
 %% Load food web list from a CSV file or a predefined list
