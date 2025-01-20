@@ -6,9 +6,9 @@
 %rng(100);
 
 %% Configuration
-useParallel = false;         % Flag to enable or disable parallel pool
+useParallel = true;         % Flag to enable or disable parallel pool
 kRange = [10];              % Define the interval of K values to execute
-numOfExperiment = 1;
+numOfExperiment = 50;
 ratioTrain = 0.9;
 
 %% Load food web list from a CSV file or a predefined list
@@ -87,11 +87,11 @@ for f_idx = 1:length(foodweb_names)
 
         if useParallel
             parfor ith_experiment = 1:numOfExperiment
-                log_entries{ith_experiment} = processExperiment(ith_experiment, net, ratioTrain, K);
+                log_entries{ith_experiment} = processExperiment(ith_experiment, net, ratioTrain, K, consumers, resources);
             end
         else
             for ith_experiment = 1:numOfExperiment
-                log_entries{ith_experiment} = processExperiment(ith_experiment, net, ratioTrain, K);
+                log_entries{ith_experiment} = processExperiment(ith_experiment, net, ratioTrain, K, consumers, resources);
             end
         end
 
@@ -121,7 +121,7 @@ disp(['Execution finished at: ', datestr(now)]);
 
 
 %% Helper Function for Experiment Processing
-function log_entry = processExperiment(ith_experiment, net, ratioTrain, K)
+function log_entry = processExperiment(ith_experiment, net, ratioTrain, K, consumers, resources)
     % Initialize temporary variables inside the loop
     tempauc = 0;
     iteration_start_time = tic;
@@ -141,7 +141,7 @@ function log_entry = processExperiment(ith_experiment, net, ratioTrain, K)
 
     % WLNM Method
     disp('WLNM...');
-    [tempauc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(train, test, K, ith_experiment);
+    [tempauc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(train, test, K, ith_experiment, consumers, resources);
 
     % Measure time taken for this iteration
     iteration_time = toc(iteration_start_time);  % Time in seconds

@@ -1,4 +1,4 @@
-function [auc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(train, test, K, ith_experiment)
+function [auc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(train, test, K, ith_experiment, consumers, resources)
 %  Usage: the main program for Weisfeiler-Lehman Neural Machine (WLNM)
 %  --Input--
 %  -train: a sparse matrix of training links (1: link, 0: otherwise)
@@ -22,7 +22,7 @@ htest = triu(test, 1);
 
 % sample negative links for train and test sets
 
-[train_pos, train_neg, test_pos, test_neg] = sample_neg(htrain, htest, 2, 1, true);  % change the last argument to true to do link prediction on whole network
+[train_pos, train_neg, test_pos, test_neg] = sample_neg(htrain, htest, 2, 1, true, consumers, resources);  % change the last argument to true to do link prediction on whole network
 
 [train_data, train_label] = graph2vector(train_pos, train_neg, train, K);
 [test_data, test_label] = graph2vector(test_pos, test_neg, train, K);
