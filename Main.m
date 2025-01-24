@@ -3,7 +3,14 @@
 %
 %  *author: Muhan Zhang, Washington University in St. Louis
 %
+%
 %rng(100);
+
+%% Configuration
+useParallel = true;         % Flag to enable or disable parallel pool
+kRange = 5:15;              % Define the interval of K values to execute
+numOfExperiment = 50;
+ratioTrain = 0.9;
 
 %% Configuration
 useParallel = true;         % Flag to enable or disable parallel pool
@@ -68,7 +75,12 @@ for f_idx = 1:length(foodweb_names)
         diary off;
         continue;
     end
-    load(thisdatapath, 'net');  % Load only 'net' variable to save memory
+    
+    % Load net, species, and classification
+    load(thisdatapath, 'net', 'species', 'classification');
+
+    % Classify species
+    [consumers, resources] = ClassifySpecies(net, classification);
 
     % Debugging: Check if the input graph is directed
     disp('Debug: Checking input graph for symmetry (Main.m)...');
@@ -79,6 +91,7 @@ for f_idx = 1:length(foodweb_names)
     end
 
     disp(['Processing dataset: ', dataname]);
+    disp(['Consumers: ', num2str(length(consumers)), ' | Resources: ', num2str(length(resources))]);
 
     % Loop over values of k
     for K = kRange
@@ -89,11 +102,11 @@ for f_idx = 1:length(foodweb_names)
 
         if useParallel
             parfor ith_experiment = 1:numOfExperiment
-                log_entries{ith_experiment} = processExperiment(ith_experiment, net, ratioTrain, K);
+                log_entries{ith_experiment} = processExperiment(ith_experiment, net, ratioTrain, K, consumers, resources);
             end
         else
             for ith_experiment = 1:numOfExperiment
-                log_entries{ith_experiment} = processExperiment(ith_experiment, net, ratioTrain, K);
+                log_entries{ith_experiment} = processExperiment(ith_experiment, net, ratioTrain, K, consumers, resources);
             end
         end
 
@@ -112,7 +125,7 @@ for f_idx = 1:length(foodweb_names)
     % Clean up memory
     fclose(fileID);
     diary off;
-    clear net aucOfallPredictor; % Clear large variables after each dataset
+    clear net species classification consumers resources;  % Free memory
 end
     
 % Close parallel pool after all datasets
@@ -121,8 +134,9 @@ if useParallel && exist('poolobj', 'var')
 end
 disp(['Execution finished at: ', datestr(now)]);
 
+
 %% Helper Function for Experiment Processing
-function log_entry = processExperiment(ith_experiment, net, ratioTrain, K)
+function log_entry = processExperiment(ith_experiment, net, ratioTrain, K, consumers, resources)
     % Initialize temporary variables inside the loop
     tempauc = 0;
     iteration_start_time = tic;
@@ -135,29 +149,14 @@ function log_entry = processExperiment(ith_experiment, net, ratioTrain, K)
         disp([num2str(ith_experiment), '%... ']);
     end
 
-    % Divide into train/test without enforcing symmetry
-    [train, test] = DivideNet(net, ratioTrain);  % Ensure DivideNet works with directed graphs
-    train = sparse(train);  % Ensure sparse format
-    test = sparse(test);
-
-    % Debugging: Check if training and testing graphs are directed
-    disp('Debug: Checking training graph for symmetry (Main.m)...');
-    if isequal(train, train')  % Check if the matrix is symmetric
-        disp('Warning: Training graph is undirected (symmetric adjacency matrix).');
-    else
-        disp('Debug: Training graph is directed.');
-    end
-
-    disp('Debug: Checking testing graph for symmetry (Main.m)...');
-    if isequal(test, test')  % Check if the matrix is symmetric
-        disp('Warning: Testing graph is undirected (symmetric adjacency matrix).');
-    else
-        disp('Debug: Testing graph is directed.');
-    end
+    % divide into train/test
+    [train, test] = DivideNet(net, ratioTrain);
+    train = sparse(train); test = sparse(test);
+    train = spones(train + train'); test = spones(test + test');
 
     % WLNM Method
     disp('WLNM...');
-    [tempauc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(train, test, K, ith_experiment);
+    [tempauc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(train, test, K, ith_experiment, consumers, resources);
 
     % Measure time taken for this iteration
     iteration_time = toc(iteration_start_time);  % Time in seconds
