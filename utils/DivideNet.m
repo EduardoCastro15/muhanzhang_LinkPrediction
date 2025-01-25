@@ -57,31 +57,26 @@ function [train, test ] = DivideNet(net, ratioTrain, enforce_reachability)
         uid2 = linklist(index_link, 2);
         net(uid1, uid2) = 0;  % Temporarily remove the edge from the network
 
-        %% Check if nodes uid1 and uid2 remain reachable
-        tempvector = net(uid1, :);  % Get nodes reachable from uid1 in one step
+        % Reachability check
         reachable = 0;  % Default: edge cannot be removed
 
-        % Calculate reachability within two steps
-        uid1TOuid2 = tempvector * net + tempvector;
-        if uid1TOuid2(uid2) > 0
-            reachable = 1;  % Mark as reachable
-        else
-            % Check reachability for more than two steps until stable
-            while (nnz(spones(uid1TOuid2) - tempvector) ~= 0)
-                tempvector = spones(uid1TOuid2);
-                uid1TOuid2 = tempvector * net + tempvector;
+        if enforce_reachability
+            tempvector = net(uid1, :);  % Outgoing edges from uid1
+            uid1TOuid2 = tempvector * net;  % Directed paths
+            while nnz(uid1TOuid2 - tempvector) ~= 0
+                tempvector = uid1TOuid2;
+                uid1TOuid2 = tempvector * net;
                 if uid1TOuid2(uid2) > 0
-                    reachable = 1;  % Mark as reachable
+                    reachable = 1;
                     break;
                 end
             end
+        else
+            reachable = 1;  % Skip reachability checks if not enforced
         end
 
-        % Modified: Allow all selected edges in the test set, regardless of connectivity
-        reachable = 1;
-
-        %% Add edge to the test set or restore it in the training network
-        if reachable == 1  % Edge can be deleted
+        % Add edge to the test set or restore it in the training network
+        if reachable  % Edge can be deleted
             linklist(index_link, :) = [];  % Remove edge from linklist
             test(uid1, uid2) = 1;  % Mark as test edge
         else
