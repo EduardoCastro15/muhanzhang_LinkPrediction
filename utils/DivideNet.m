@@ -1,14 +1,20 @@
-function [train, test ] = DivideNet(net, ratioTrain)
+function [train, test ] = DivideNet(net, ratioTrain, enforce_reachability)
 % Usage: Divide the network into training and testing sets
-% --Input--
-% - net: adjacency matrix representing the network
-% - ratioTrain: proportion of edges to keep in the training set
-% --Output--
-% - train: adjacency matrix of training links (1: link, 0: otherwise)
-% - test: adjacency matrix of testing links (1: link, 0: otherwise)
+% Input:
+%   - net: adjacency matrix representing the directed network
+%   - ratioTrain: proportion of edges to keep in the training set
+%   - enforce_reachability (optional): whether to enforce reachability (default: true)
+%
+% Output:
+%   - train: adjacency matrix of training links (1: link, 0: otherwise)
+%   - test: adjacency matrix of testing links (1: link, 0: otherwise)
 %
 %%  *problem identified: duplicate test links due to non-triangular matrix
 %  This function has been updated to support directed graphs without enforcing symmetry.
+
+    if nargin < 3
+        enforce_reachability = true;  % Default: enforce reachability
+    end
 
     % Debugging: Check if the input graph is symmetric
     disp('Debug: Checking input graph for symmetry at the start of (DivideNet.m)...');
