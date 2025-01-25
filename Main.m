@@ -7,15 +7,9 @@
 %rng(100);
 
 %% Configuration
-useParallel = true;         % Flag to enable or disable parallel pool
-kRange = 5:15;              % Define the interval of K values to execute
-numOfExperiment = 50;
-ratioTrain = 0.9;
-
-%% Configuration
-useParallel = true;         % Flag to enable or disable parallel pool
-kRange = 5:15;              % Define the interval of K values to execute
-numOfExperiment = 50;
+useParallel = false;         % Flag to enable or disable parallel pool
+kRange = [10];              % Define the interval of K values to execute
+numOfExperiment = 10;
 ratioTrain = 0.9;
 
 %% Load food web list from a CSV file or a predefined list
@@ -29,13 +23,10 @@ if ~exist(log_dir, 'dir')
     mkdir(log_dir);
 end
 
-% Start parallel pool if the flag is enabled
-if useParallel
-    % Start parallel pool (initialize once for all datasets)
-    if isempty(gcp('nocreate'))
-        poolobj = parpool(feature('numcores'));
-        % parpool('local', str2double(getenv('NSLOTS')));
-    end
+% Parallel Pool Setup
+if useParallel && isempty(gcp('nocreate'))
+    parpool(feature('numcores'));
+    % parpool('local', str2double(getenv('NSLOTS')));
 end
 
 % Iterate over all food webs in the list
@@ -151,8 +142,23 @@ function log_entry = processExperiment(ith_experiment, net, ratioTrain, K, consu
 
     % divide into train/test
     [train, test] = DivideNet(net, ratioTrain);
-    train = sparse(train); test = sparse(test);
-    train = spones(train + train'); test = spones(test + test');
+    train = sparse(train);
+    test = sparse(test);
+    
+    % Debugging: Check if training and testing graphs are directed
+    disp('Debug: Checking training graph for symmetry (Main.m)...');
+    if isequal(train, train')  % Check if the matrix is symmetric
+        disp('Warning: Training graph is undirected (symmetric adjacency matrix).');
+    else
+        disp('Debug: Training graph is directed.');
+    end
+
+    disp('Debug: Checking testing graph for symmetry (Main.m)...');
+    if isequal(test, test')  % Check if the matrix is symmetric
+        disp('Warning: Testing graph is undirected (symmetric adjacency matrix).');
+    else
+        disp('Debug: Testing graph is directed.');
+    end
 
     % WLNM Method
     disp('WLNM...');
