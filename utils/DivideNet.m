@@ -44,7 +44,8 @@ function [train, test ] = DivideNet(net, ratioTrain, enforce_reachability)
 
     % Randomly select edges to add to the test set until the desired count is reached
     while (nnz(test) < num_testlinks)
-        if length(linklist) <= 2
+        if isempty(linklist)
+            warning('Not enough edges remaining to create test set.');
             break;
         end
 
