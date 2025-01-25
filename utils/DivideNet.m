@@ -50,7 +50,7 @@ function [train, test ] = DivideNet(net, ratioTrain, enforce_reachability)
         end
 
         % Randomly choose an edge from the link list
-        index_link = ceil(rand(1) * length(linklist));
+        index_link = randi(size(linklist, 1));
 
         % Identify the nodes connected by the selected edge
         uid1 = linklist(index_link, 1);
