@@ -61,16 +61,7 @@ function [train, test ] = DivideNet(net, ratioTrain, enforce_reachability)
         reachable = 0;  % Default: edge cannot be removed
 
         if enforce_reachability
-            tempvector = net(uid1, :);  % Outgoing edges from uid1
-            uid1TOuid2 = tempvector * net;  % Directed paths
-            while nnz(uid1TOuid2 - tempvector) ~= 0
-                tempvector = uid1TOuid2;
-                uid1TOuid2 = tempvector * net;
-                if uid1TOuid2(uid2) > 0
-                    reachable = 1;
-                    break;
-                end
-            end
+            reachable = isReachableBFS(net, uid1, uid2);  % Use BFS for reachability check
         else
             reachable = 1;  % Skip reachability checks if not enforced
         end
@@ -102,4 +93,34 @@ function [train, test ] = DivideNet(net, ratioTrain, enforce_reachability)
     else
         disp('Debug: Testing graph is directed.');
     end
+end
+
+
+function reachable = isReachableBFS(net, uid1, uid2)
+    % BFS implementation to check reachability
+    queue = uid1;  % Start from uid1
+    visited = false(size(net, 1), 1);  % Track visited nodes
+    visited(uid1) = true;
+
+    while ~isempty(queue)
+        current = queue(1);  % Dequeue the first node
+        queue(1) = [];  % Remove the node from the queue
+
+        % Check if uid2 is reached
+        if current == uid2
+            reachable = true;
+            return;
+        end
+
+        % Add neighbors to the queue
+        neighbors = find(net(current, :) > 0);  % Outgoing edges
+        for neighbor = neighbors
+            if ~visited(neighbor)
+                visited(neighbor) = true;
+                queue(end + 1) = neighbor;  % Enqueue
+            end
+        end
+    end
+
+    reachable = false;  % uid2 not reachable
 end
