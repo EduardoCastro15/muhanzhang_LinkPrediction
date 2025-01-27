@@ -48,24 +48,17 @@ function [train_pos, train_neg, test_pos, test_neg] = sample_neg(train, test, k,
     assert(all(net(:) <= 1), 'Error: Positive train and test links overlap.');
 
     % Get all potential negative links (non-existent links)
-    neg_net = triu(-(net - 1), 1);
-    [neg_i, neg_j] = find(neg_net);
+    [neg_i, neg_j] = find(triu(net == 0, 1));  % Upper triangular part for directed graphs
     neg_links = [neg_i, neg_j];
 
     % Filter negative links based on classification
-    neg_links_filtered = [];
-    for idx = 1:size(neg_links, 1)
-        u = neg_links(idx, 1);
-        v = neg_links(idx, 2);
-        % Allow consumer-consumer or resource-resource links only
-        if (ismember(u, consumers) && ismember(v, consumers)) || ...
-           (ismember(u, resources) && ismember(v, resources))
-            neg_links_filtered = [neg_links_filtered; u, v];
-        end
-    end
+    is_consumer_consumer = ismember(neg_i, consumers) & ismember(neg_j, consumers);
+    is_resource_resource = ismember(neg_i, resources) & ismember(neg_j, resources);
+    valid_indices = is_consumer_consumer | is_resource_resource;
+    neg_links = neg_links(valid_indices, :);
 
-    % Use filtered negative links for sampling
-    neg_links = neg_links_filtered;
+    % Debugging: Check available negative links
+    disp(['Debug: Negative links available: ', num2str(size(neg_links, 1))]);
 
     % Ensure enough negative links are available
     total_neg_links_needed = k * (train_size + test_size);
@@ -76,8 +69,8 @@ function [train_pos, train_neg, test_pos, test_neg] = sample_neg(train, test, k,
 
     % Sample negative links for train and test
     perm = randperm(size(neg_links, 1));
-    train_neg = neg_links(perm(1:k * train_size), :);
-    test_neg = neg_links(perm(k * train_size + 1:k * (train_size + test_size)), :);
+    train_neg = neg_links(perm(1:ceil(k * train_size)), :);
+    test_neg = neg_links(perm(ceil(k * train_size) + 1:ceil(k * (train_size + test_size))), :);
 
     % Sample a portion of links if specified
     if portion < 1
