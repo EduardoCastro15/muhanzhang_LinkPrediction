@@ -11,31 +11,31 @@ function [data, label] = graph2vector(pos, neg, A, K)
 %
 %  *author: Muhan Zhang, Washington University in St. Louis
 
-all = [pos; neg];
-pos_size = size(pos, 1);
-neg_size = size(neg, 1);
-all_size = pos_size + neg_size;
+    all = [pos; neg];
+    pos_size = size(pos, 1);
+    neg_size = size(neg, 1);
+    all_size = pos_size + neg_size;
 
-% Generate labels
-label = [ones(pos_size, 1); zeros(neg_size, 1)];
+    % Generate labels
+    label = [ones(pos_size, 1); zeros(neg_size, 1)];
 
-% Generate vector data
-d = K * (K - 1) / 2;  % dim of data vectors
-data = zeros(all_size, d);
+    % Generate vector data
+    d = K * (K - 1) / 2;  % dim of data vectors
+    data = zeros(all_size, d);
 
-one_tenth = floor(all_size / 10);
-display('Subgraph Pattern Encoding Begins...')
-for i = 1: all_size
-    ind = all(i, :);
-    sample = subgraph2vector(ind, A, K);
-    data(i, :) = sample;
+    one_tenth = floor(all_size / 10);
+    display('Subgraph Pattern Encoding Begins...')
+    for i = 1: all_size
+        ind = all(i, :);
+        sample = subgraph2vector(ind, A, K);
+        data(i, :) = sample;
 
-    % Display progress
-    progress = i / one_tenth;
-    if ismember(progress, [1:9])
-        display(sprintf('Subgraph Pattern Encoding Progress %d0%%...', progress));
+        % Display progress
+        progress = i / one_tenth;
+        if ismember(progress, [1:9])
+            display(sprintf('Subgraph Pattern Encoding Progress %d0%%...', progress));
+        end
     end
-end
 end
 
 
