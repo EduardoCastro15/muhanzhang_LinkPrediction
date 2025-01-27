@@ -1,15 +1,13 @@
 function [data, label] = graph2vector(pos, neg, A, K)
 %  Usage: to convert links' enclosing subgraphs (both pos and neg) into real vectors
-%  --Input--
-%       -pos: indices of positive links
-%       -neg: indices of negative links
-%       -A: the observed graph's adjacency matrix from which to
-%           to extract subgraph features
-%       -K: the number of nodes in each link's subgraph
-%  --Output--
-%       -data: the constructed training data, each row is a
-%              link's vector representation
-%       -label: a column vector of links' labels
+% Input:
+%   - pos: indices of positive links
+%   - neg: indices of negative links
+%   - A: the observed graph's adjacency matrix from which to extract subgraph features
+%   - K: the number of nodes in each link's subgraph
+% Output:
+%   - data: the constructed training data, each row is a link's vector representation
+%   - label: a column vector of links' labels
 %
 %  *author: Muhan Zhang, Washington University in St. Louis
 
