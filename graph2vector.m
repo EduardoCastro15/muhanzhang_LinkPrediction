@@ -40,12 +40,10 @@ end
 
 
 function sample = subgraph2vector(ind, A, K)
-%  Usage: 1) to extract the enclosing subgraph for a link
-%            Aij (i = ind(1), j = ind(2))
-%         2) to impose a vertex ordering for the vertices
-%            of the enclosing subgraph using graph labeling
-%         3) to construct an adjacency matrix and output
-%            the reshaped vector
+% Usage:
+%   1) To extract the enclosing subgraph for a link Aij (i = ind(1), j = ind(2))
+%   2) To impose a vertex ordering for the vertices of the enclosing subgraph using graph labeling
+%   3) To construct an adjacency matrix and output the reshaped vector
 %
 %  *author: Muhan Zhang, Washington University in St. Louis
 
