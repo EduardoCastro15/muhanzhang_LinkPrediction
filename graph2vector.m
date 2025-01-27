@@ -47,158 +47,158 @@ function sample = subgraph2vector(ind, A, K)
 %
 %  *author: Muhan Zhang, Washington University in St. Louis
 
-D = K * (K - 1) / 2;  % the length of output vector
+    D = K * (K - 1) / 2;  % the length of output vector
 
-% Extract a subgraph of K nodes
-links = [ind];
-links_dist = [0];  % the graph distance to the initial link
-dist = 0;
-fringe = [ind];
-nodes = [ind(1); ind(2)];
-nodes_dist = [0; 0];
-while 1
-    dist = dist + 1;
-    fringe = neighbors(fringe, A);
-    fringe = setdiff(fringe, links, 'rows');
-    if isempty(fringe)  % no more new neighbors, add dummy nodes
-        subgraph = A(nodes, nodes);
-        subgraph(1, 2) = 0;  % ensure subgraph patterns do not contain information about link existence
-        subgraph(2, 1) = 0;
-        break
+    % Extract a subgraph of K nodes
+    links = [ind];
+    links_dist = [0];  % the graph distance to the initial link
+    dist = 0;
+    fringe = [ind];
+    nodes = [ind(1); ind(2)];
+    nodes_dist = [0; 0];
+    while 1
+        dist = dist + 1;
+        fringe = neighbors(fringe, A);
+        fringe = setdiff(fringe, links, 'rows');
+        if isempty(fringe)  % no more new neighbors, add dummy nodes
+            subgraph = A(nodes, nodes);
+            subgraph(1, 2) = 0;  % ensure subgraph patterns do not contain information about link existence
+            subgraph(2, 1) = 0;
+            break
+        end
+        new_nodes = setdiff(fringe(:), nodes, 'rows');
+        nodes = [nodes; new_nodes];
+        nodes_dist = [nodes_dist; ones(length(new_nodes), 1) * dist];
+        links = [links; fringe];
+        links_dist = [links_dist; ones(size(fringe, 1), 1) * dist];
+        if size(nodes, 1) >= K  % nodes enough, extract subgraph
+            subgraph = A(nodes, nodes);  % the unweighted subgraph
+            subgraph(1, 2) = 0;  % ensure subgraph patterns do not contain information about link existence
+            subgraph(2, 1) = 0;
+            break
+        end
     end
-    new_nodes = setdiff(fringe(:), nodes, 'rows');
-    nodes = [nodes; new_nodes];
-    nodes_dist = [nodes_dist; ones(length(new_nodes), 1) * dist];
-    links = [links; fringe];
-    links_dist = [links_dist; ones(size(fringe, 1), 1) * dist];
-    if size(nodes, 1) >= K  % nodes enough, extract subgraph
-        subgraph = A(nodes, nodes);  % the unweighted subgraph
-        subgraph(1, 2) = 0;  % ensure subgraph patterns do not contain information about link existence
-        subgraph(2, 1) = 0;
-        break
+
+    % Calculate the link-weighted subgraph without symmetrization
+    links_ind = sub2ind(size(A), links(:, 1), links(:, 2));
+    A_copy = A / (dist + 1);
+    A_copy(links_ind) = 1 ./ links_dist;
+
+    % Extract the link-weighted subgraph without symmetrizing
+    lweight_subgraph = A_copy(nodes, nodes);
+
+    % Debugging: Validate that subgraph is directed
+    disp('Debug: Checking subgraph for symmetry (graph2vector.m)...');
+    if isequal(subgraph, subgraph')
+        disp('Warning: Subgraph has become undirected (symmetric adjacency matrix).');
+    else
+        disp('Debug: Subgraph is directed.');
     end
-end
 
-% Calculate the link-weighted subgraph without symmetrization
-links_ind = sub2ind(size(A), links(:, 1), links(:, 2));
-A_copy = A / (dist + 1);
-A_copy(links_ind) = 1 ./ links_dist;
-
-% Extract the link-weighted subgraph without symmetrizing
-lweight_subgraph = A_copy(nodes, nodes);
-
-% Debugging: Validate that subgraph is directed
-disp('Debug: Checking subgraph for symmetry (graph2vector.m)...');
-if isequal(subgraph, subgraph')
-    disp('Warning: Subgraph has become undirected (symmetric adjacency matrix).');
-else
-    disp('Debug: Subgraph is directed.');
-end
-
-% Generate enclosing subgraph's vector representation
-order = g_label(subgraph);
-if length(order) > K  % if size > K, keep only the top-K vertices and reorder
-    order(K + 1: end) = [];
-    subgraph = subgraph(order, order);
-    lweight_subgraph = lweight_subgraph(order, order);
+    % Generate enclosing subgraph's vector representation
     order = g_label(subgraph);
-end
+    if length(order) > K  % if size > K, keep only the top-K vertices and reorder
+        order(K + 1: end) = [];
+        subgraph = subgraph(order, order);
+        lweight_subgraph = lweight_subgraph(order, order);
+        order = g_label(subgraph);
+    end
 
-% Generate enclosing subgraph's vector representation
-ng2v = 2;  % method for transforming a g_labeled subgraph to vector
-switch ng2v
-    case 1  % the simplest way -- one dimensional vector by ravelling adjacency matrix
-        psubgraph = subgraph(order, order);  % g_labeled subgraph
-        sample = psubgraph(triu(logical(ones(size(subgraph))), 1));
-        sample(1) = eps;
-    case 2  % use link distance-weighted adjcency matrix, performanc is better
-        plweight_subgraph = lweight_subgraph(order, order);  % g_labeled link-weighted subgraph
-        sample = plweight_subgraph(triu(logical(ones(size(subgraph))), 1));
-        sample(1) = eps;  % avoid inf, and more important, avoid empty vector in libsvm format (directly deleting sample(1) results in libsvm format error)
-end
-if length(sample) < D  % add dummy nodes if not enough nodes extracted in subgraph
-    sample = [sample; zeros(D - length(sample), 1)];
-end
+    % Generate enclosing subgraph's vector representation
+    ng2v = 2;  % method for transforming a g_labeled subgraph to vector
+    switch ng2v
+        case 1  % the simplest way -- one dimensional vector by ravelling adjacency matrix
+            psubgraph = subgraph(order, order);  % g_labeled subgraph
+            sample = psubgraph(triu(logical(ones(size(subgraph))), 1));
+            sample(1) = eps;
+        case 2  % use link distance-weighted adjcency matrix, performanc is better
+            plweight_subgraph = lweight_subgraph(order, order);  % g_labeled link-weighted subgraph
+            sample = plweight_subgraph(triu(logical(ones(size(subgraph))), 1));
+            sample(1) = eps;  % avoid inf, and more important, avoid empty vector in libsvm format (directly deleting sample(1) results in libsvm format error)
+    end
+    if length(sample) < D  % add dummy nodes if not enough nodes extracted in subgraph
+        sample = [sample; zeros(D - length(sample), 1)];
+    end
 end
 
 
 function N = neighbors(fringe, A);
 %  Usage: find the neighbor links of all links in fringe from A
 
-N = [];
-for no = 1: size(fringe, 1)
-    ind = fringe(no, :);
-    i = ind(1);
-    j = ind(2);
-    [~, ij] = find(A(i, :));
-    [ji, ~] = find(A(:, j));
-    N = [N; [i * ones(length(ij), 1), ij']; [ji, j * ones(length(ji), 1)]];
-    N = unique(N, 'rows', 'stable');  % eliminate repeated ones and keep in order
-end
+    N = [];
+    for no = 1: size(fringe, 1)
+        ind = fringe(no, :);
+        i = ind(1);
+        j = ind(2);
+        [~, ij] = find(A(i, :));
+        [ji, ~] = find(A(:, j));
+        N = [N; [i * ones(length(ij), 1), ij']; [ji, j * ones(length(ji), 1)]];
+        N = unique(N, 'rows', 'stable');  % eliminate repeated ones and keep in order
+    end
 end
 
 
 function order = g_label(subgraph, p_mo)
 %  Usage: impose a vertex order for a enclosing subgraph using graph labeling
 
-if nargin < 2
-    p_mo = 7;  % default palette_wl
-end
+    if nargin < 2
+        p_mo = 7;  % default palette_wl
+    end
 
-% Ensure directed graph object
-disp('Debug: Validating subgraph in g_label (graph2vector.m)...');
-if isequal(subgraph, subgraph')
-    disp('Warning: Subgraph has become undirected before g_label.');
-else
-    disp('Debug: Subgraph is directed before g_label.');
-end
+    % Ensure directed graph object
+    disp('Debug: Validating subgraph in g_label (graph2vector.m)...');
+    if isequal(subgraph, subgraph')
+        disp('Warning: Subgraph has become undirected before g_label.');
+    else
+        disp('Debug: Subgraph is directed before g_label.');
+    end
 
-K = size(subgraph, 1);  % local variable
+    K = size(subgraph, 1);  % local variable
 
-% Graph Representation and Distance Calculation
-G = digraph(subgraph);  % Create a directed graph object
-dist_to_1 = distances(G, 1);  % Compute shortest paths from node 1
-dist_to_2 = distances(G, 2);  % Compute shortest paths from node 2
+    % Graph Representation and Distance Calculation
+    G = digraph(subgraph);  % Create a directed graph object
+    dist_to_1 = distances(G, 1);  % Compute shortest paths from node 1
+    dist_to_2 = distances(G, 2);  % Compute shortest paths from node 2
 
-% Handling Unreachable Nodes
-dist_to_1(isinf(dist_to_1)) = 2 * K;  % replace inf nodes (unreachable from 1 or 2) by an upperbound dist
-dist_to_2(isinf(dist_to_2)) = 2 * K;
+    % Handling Unreachable Nodes
+    dist_to_1(isinf(dist_to_1)) = 2 * K;  % replace inf nodes (unreachable from 1 or 2) by an upperbound dist
+    dist_to_2(isinf(dist_to_2)) = 2 * K;
 
-% Initial Vertex Coloring
-avg_dist = sqrt(dist_to_1 .* dist_to_2);  % use geometric mean as the average distance to the link
-[~, ~, avg_dist_colors] = unique(avg_dist);  % f mapping to initial colors
+    % Initial Vertex Coloring
+    avg_dist = sqrt(dist_to_1 .* dist_to_2);  % use geometric mean as the average distance to the link
+    [~, ~, avg_dist_colors] = unique(avg_dist);  % f mapping to initial colors
 
-% switch different graph labeling methods
-switch p_mo
-    case 1
-        % use classical wl, no initial colors
-        classes = wl_string_lexico(subgraph);
-        order = canon(full(subgraph), classes)';
-    case 2
-        % use wl_hashing, no initial colors
-        classes = wl_hashing(subgraph);
-        order = canon(full(subgraph), classes)';
-    case 3
-        % use classical wl, with initial colors
-        classes = wl_string_lexico(subgraph, avg_dist_colors);
-        order = canon(full(subgraph), classes)';
-    case 4
-        % use wl_hashing, with initial colors
-        classes = wl_hashing(subgraph, avg_dist_colors);
-        order = canon(full(subgraph), classes)';
-    case 5
-        % directly use nauty for canonical labeling
-        order = canon(full(subgraph), ones(K, 1))';
-    case 6
-        % no graph labeling, directly use the predefined order
-        order = [1: 1: K];
-    case 7
-        % palette_wl with initial colors, break ties by nauty
-        classes = palette_wl(subgraph, avg_dist_colors);
-        %classes = palette_wl(subgraph);  % no initial colors
-        order = canon(full(subgraph), classes)';
-    case 8
-        % random labeling
-        order = randperm(K);
-end
+    % switch different graph labeling methods
+    switch p_mo
+        case 1
+            % use classical wl, no initial colors
+            classes = wl_string_lexico(subgraph);
+            order = canon(full(subgraph), classes)';
+        case 2
+            % use wl_hashing, no initial colors
+            classes = wl_hashing(subgraph);
+            order = canon(full(subgraph), classes)';
+        case 3
+            % use classical wl, with initial colors
+            classes = wl_string_lexico(subgraph, avg_dist_colors);
+            order = canon(full(subgraph), classes)';
+        case 4
+            % use wl_hashing, with initial colors
+            classes = wl_hashing(subgraph, avg_dist_colors);
+            order = canon(full(subgraph), classes)';
+        case 5
+            % directly use nauty for canonical labeling
+            order = canon(full(subgraph), ones(K, 1))';
+        case 6
+            % no graph labeling, directly use the predefined order
+            order = [1: 1: K];
+        case 7
+            % palette_wl with initial colors, break ties by nauty
+            classes = palette_wl(subgraph, avg_dist_colors);
+            %classes = palette_wl(subgraph);  % no initial colors
+            order = canon(full(subgraph), classes)';
+        case 8
+            % random labeling
+            order = randperm(K);
+    end
 end
