@@ -1,12 +1,16 @@
 function [auc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(train, test, K, ith_experiment, consumers, resources)
-%  Usage: the main program for Weisfeiler-Lehman Neural Machine (WLNM)
-%  --Input--
-%  -train: a sparse matrix of training links (1: link, 0: otherwise)
-%  -test: a sparse matrix of testing links (1: link, 0: otherwise)
-%  -K: number of vertices in an enclosing subgraph
-%  -ith_experiment: exp index, for parallel computing
-%  --Output--
-%  -auc: the AUC score of WLNM
+% Usage: the main program for Weisfeiler-Lehman Neural Machine (WLNM)
+% Input:
+%   - train: training graph (adjacency matrix)
+%   - test: testing graph (adjacency matrix)
+%   - K: number of vertices in an enclosing subgraph
+%   - ith_experiment: experiment index
+%   - consumers, resources: node classifications
+%
+% Output:
+%   - auc: AUC score
+%   - best_threshold: threshold with highest F1-score
+%   - best_precision, best_recall, best_f1_score: metrics at the best threshold
 %
 %  *author: Muhan Zhang, Washington University in St. Louis
 %%
@@ -22,11 +26,14 @@ function [auc, best_threshold, best_precision, best_recall, best_f1_score] = WLN
     assert(~issymmetric(test), 'Test graph must be directed!');
 
     % sample negative links for train and test sets
-    [train_pos, train_neg, test_pos, test_neg] = sample_neg(htrain, htest, 2, 1, true, consumers, resources);
+    [train_pos, train_neg, test_pos, test_neg] = sample_neg(train, test, 2, 1, true, consumers, resources);
+    disp(['Debug: train_pos edges: ', num2str(nnz(train_pos)), ', train_neg edges: ', num2str(nnz(train_neg))]);
+    disp(['Debug: test_pos edges: ', num2str(nnz(test_pos)), ', test_neg edges: ', num2str(nnz(test_neg))]);
 
     % Convert graphs to feature vectors
     [train_data, train_label] = graph2vector(train_pos, train_neg, train, K);
     [test_data, test_label] = graph2vector(test_pos, test_neg, train, K);
+    disp(['Debug: train_data size: ', num2str(size(train_data, 1)), ' samples with ', num2str(size(train_data, 2)), ' features.']);
 
     % Debugging: Check if train_pos, train_neg, test_pos, and test_neg are symmetric
     disp('Debug: Checking symmetry of train_pos (WLNM.m)...');
@@ -83,7 +90,8 @@ function [auc, best_threshold, best_precision, best_recall, best_f1_score] = WLN
             delete(sprintf('tempdata/testdata_%d', ith_experiment));
             delete(sprintf('tempdata/test_log_scores_%d.asc', ith_experiment));
         case 3 % train a feedforward neural network in MATLAB
-            layers = [imageInputLayer([K*(K-1)/2 1 1], 'Normalization','none')
+            input_dim = (K^2 - K)/2;  % For directed subgraphs
+            layers = [imageInputLayer([input_dim, 1, 1], 'Normalization','none')
                 fullyConnectedLayer(32)
                 reluLayer
                 fullyConnectedLayer(32)
@@ -93,11 +101,9 @@ function [auc, best_threshold, best_precision, best_recall, best_f1_score] = WLN
                 fullyConnectedLayer(2)
                 softmaxLayer
                 classificationLayer];
-            opts = trainingOptions('sgdm', 'InitialLearnRate', 0.1, 'MaxEpochs', 200, 'MiniBatchSize', 128, ...
-                'LearnRateSchedule','piecewise', 'LearnRateDropFactor', 0.9, 'L2Regularization', 0, ...
-                'ExecutionEnvironment', 'cpu');
-            net = trainNetwork(reshape(train_data', K*(K-1)/2, 1, 1, size(train_data, 1)), categorical(train_label), layers, opts);
-            [~, scores] = classify(net, reshape(test_data', K*(K-1)/2, 1, 1, size(test_data, 1)));
+            opts = trainingOptions('sgdm', 'InitialLearnRate', 0.1, 'MaxEpochs', 200, 'MiniBatchSize', 128, 'LearnRateSchedule','piecewise', 'LearnRateDropFactor', 0.9, 'L2Regularization', 0, 'ExecutionEnvironment', 'cpu');
+            net = trainNetwork(reshape(train_data', input_dim, 1, 1, size(train_data, 1)), categorical(train_label), layers, opts);
+            [~, scores] = classify(net, reshape(test_data', input_dim, 1, 1, size(test_data, 1)));
             scores(:, 1) = [];
         case 4 % train a neural network with sklearn
             addpath('software/liblinear-2.1/matlab');  % need to install liblinear
