@@ -1,19 +1,19 @@
 function [train_pos, train_neg, test_pos, test_neg] = sample_neg(train, test, k, portion, evaluate_on_all_unseen, consumers, resources)
-%  Usage: to sample negative links for train and test datasets. When sampling negative train links, assume all testing
-%         links are known and thus sample negative train links only from other unknown links. Set evaluate_on_all_unseen
-%         to true to do link prediction on all links unseen during training.
-%  --Input--
-%       -train: half train positive adjacency matrix
-%       -test: half test positive adjacency matrix
-%       -k: how many times of negative links (w.r.t. pos links) to sample
-%       -portion: if specified, only a portion of the sampled train and test links be returned
-%       -evaluate_on_all_unseen: if true, will not randomly sample negative testing links, but regard all links unseen
-%                          during training as neg testing links; train negative links are sampled in the original way
-%       - consumers: indices of consumer nodes
-%       - resources: indices of resource nodes
-%  --Output--
-%       - train_pos, train_neg: training positive and negative links
-%       - test_pos, test_neg: testing positive and negative links
+% Usage: to sample negative links for train and test datasets. When sampling negative train links, assume all testing
+%       links are known and thus sample negative train links only from other unknown links. Set evaluate_on_all_unseen
+%       to true to do link prediction on all links unseen during training.
+% Input:
+%   - train: half train positive adjacency matrix
+%   - test: half test positive adjacency matrix
+%   - k: how many times of negative links (w.r.t. pos links) to sample
+%   - portion: if specified, only a portion of the sampled train and test links be returned
+%   - evaluate_on_all_unseen: if true, will not randomly sample negative testing links, but regard all links unseen during training as neg testing links; train negative links are sampled in the original way
+%   - consumers: indices of consumer nodes
+%   - resources: indices of resource nodes
+%
+% Output:
+%   - train_pos, train_neg: training positive and negative links
+%   - test_pos, test_neg: testing positive and negative links
 %%
     if nargin < 3
         k = 1;
@@ -43,8 +43,9 @@ function [train_pos, train_neg, test_pos, test_neg] = sample_neg(train, test, k,
         net = train + test;
     end
 
-% Ensure positive train and test links do not overlap
-assert(max(max(net)) == 1, 'Error: Positive train and test links overlap.');
+    % Ensure positive train and test links do not overlap
+    % assert(max(max(net)) == 1, 'Error: Positive train and test links overlap.');
+    assert(all(net(:) <= 1), 'Error: Positive train and test links overlap.');
 
     % Get all potential negative links (non-existent links)
     neg_net = triu(-(net - 1), 1);
