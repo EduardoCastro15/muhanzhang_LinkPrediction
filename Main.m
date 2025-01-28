@@ -7,9 +7,9 @@
 %rng(100);
 
 %% Configuration
-useParallel = false;         % Flag to enable or disable parallel pool
-kRange = [10];              % Define the interval of K values to execute
-numOfExperiment = 10;
+useParallel = true;         % Flag to enable or disable parallel pool
+kRange = 5:15;              % Define the interval of K values to execute
+numOfExperiment = 50;
 ratioTrain = 0.9;
 
 %% Load food web list from a CSV file or a predefined list
@@ -141,7 +141,7 @@ function log_entry = processExperiment(ith_experiment, net, ratioTrain, K, consu
     end
 
     % divide into train/test
-    [train, test] = DivideNet(net, ratioTrain);
+    [train, test] = DivideNet(net, ratioTrain, true);
     train = sparse(train);
     test = sparse(test);
     

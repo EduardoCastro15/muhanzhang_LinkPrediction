@@ -19,25 +19,29 @@ function [data, label] = graph2vector(pos, neg, A, K)
     % Generate labels
     label = [ones(pos_size, 1); zeros(neg_size, 1)];
 
-    % Generate vector data
-    d = K * (K - 1) / 2;  % dim of data vectors
+    % Allocate space for vectors
+    d = K * (K - 1) / 2;  % Dimension of each vector
     data = zeros(all_size, d);
 
-    one_tenth = floor(all_size / 10);
-    display('Subgraph Pattern Encoding Begins...')
-    for i = 1: all_size
+    % Progress display
+    one_tenth = max(floor(all_size / 10), 1);
+    disp('Subgraph Pattern Encoding Begins...');
+
+    for i = 1:all_size
         ind = all(i, :);
         sample = subgraph2vector(ind, A, K);
 
-        % Ensure vector consistency with directed graph
-        assert(~issymmetric(sample), 'Error: Subgraph vector became undirected.');
+        % Validate and ensure sample size matches `d`
+        if length(sample) ~= d
+            error(['Error: Sample size mismatch at index ', num2str(i), ...
+                   '. Expected ', num2str(d), ' but got ', num2str(length(sample)), '.']);
+        end
 
         data(i, :) = sample;
 
         % Display progress
-        progress = i / one_tenth;
-        if ismember(progress, [1:9])
-            display(sprintf('Subgraph Pattern Encoding Progress %d0%%...', progress));
+        if mod(i, one_tenth) == 0
+            disp(['Subgraph Pattern Encoding Progress ', num2str(floor(i / one_tenth) * 10), '%...']);
         end
     end
 end
@@ -57,84 +61,68 @@ function sample = subgraph2vector(ind, A, K)
 %  *author: Muhan Zhang, Washington University in St. Louis
 %
 
-    D = K * (K - 1) / 2;  % the length of output vector
+    D = K * (K - 1) / 2;  % The length of the output vector
 
     % Extract a subgraph of K nodes
     links = [ind];
-    links_dist = [0];  % the graph distance to the initial link
     dist = 0;
     fringe = [ind];
     nodes = [ind(1); ind(2)];
-    nodes_dist = [0; 0];
 
     while true
         dist = dist + 1;
-        fringe = neighbors(fringe, A);  % Get neighbors
+        fringe = neighbors(fringe, A);  % Get directed neighbors
         fringe = setdiff(fringe, links, 'rows');  % Remove visited links
 
-        if isempty(fringe)  % no more new neighbors, add dummy nodes
+        if isempty(fringe) || size(nodes, 1) >= K
             subgraph = A(nodes, nodes);
-            subgraph(1, 2) = 0;  % ensure subgraph patterns do not contain information about link existence
-            % subgraph(2, 1) = 0;
-            break
+            break;
         end
 
-        % Add new nodes
         new_nodes = setdiff(fringe(:), nodes, 'rows');
         nodes = [nodes; new_nodes];
-        nodes_dist = [nodes_dist; ones(length(new_nodes), 1) * dist];
         links = [links; fringe];
-        links_dist = [links_dist; ones(size(fringe, 1), 1) * dist];
-        
-        if size(nodes, 1) >= K  % nodes enough, extract subgraph
-            subgraph = A(nodes, nodes);  % the unweighted subgraph
-            subgraph(1, 2) = 0;  % ensure subgraph patterns do not contain information about link existence
-            % subgraph(2, 1) = 0;
-            break
-        end
     end
 
-    % Calculate the link-weighted subgraph without symmetrization
-    links_ind = sub2ind(size(A), links(:, 1), links(:, 2));
-    A_copy = A / (dist + 1);
-    A_copy(links_ind) = 1 ./ links_dist;
-
-    % Extract the link-weighted subgraph without symmetrizing
-    lweight_subgraph = A_copy(nodes, nodes);
-
-    % Debugging: Validate that subgraph is directed
-    disp('Debug: Checking subgraph for symmetry (graph2vector.m)...');
-    if isequal(subgraph, subgraph')
-        disp('Warning: Subgraph has become undirected (symmetric adjacency matrix).');
-    else
-        disp('Debug: Subgraph is directed.');
+    % Pad the subgraph to K x K if needed
+    if size(subgraph, 1) < K
+        subgraph = pad_subgraph(subgraph, K);
     end
 
-    % Generate enclosing subgraph's vector representation
-    order = g_label(subgraph);
-    if length(order) > K  % if size > K, keep only the top-K vertices and reorder
-        order(K + 1: end) = [];
-        subgraph = subgraph(order, order);
-        lweight_subgraph = lweight_subgraph(order, order);
-        order = g_label(subgraph);
-    end
+    % Generate vertex ordering
+    order = g_label(subgraph, 7);
 
-    % Generate enclosing subgraph's vector representation
-    ng2v = 2;  % method for transforming a g_labeled subgraph to vector
-    switch ng2v
-        case 1  % the simplest way -- one dimensional vector by ravelling adjacency matrix
-            psubgraph = subgraph(order, order);  % g_labeled subgraph
-            sample = psubgraph(triu(logical(ones(size(subgraph))), 1));
-            sample(1) = eps;
-        case 2  % use link distance-weighted adjcency matrix, performanc is better
-            plweight_subgraph = lweight_subgraph(order, order);  % g_labeled link-weighted subgraph
-            sample = plweight_subgraph(triu(logical(ones(size(subgraph))), 1));
-            sample(1) = eps;  % avoid inf, and more important, avoid empty vector in libsvm format (directly deleting sample(1) results in libsvm format error)
+    % Trim order and subgraph dimensions to match
+    max_size = min(K, size(subgraph, 1));
+    order = order(1:max_size);
+    subgraph = subgraph(order, order);
+
+    % Handle weighted subgraph and vectorize
+    lweight_subgraph = A(nodes, nodes);
+    if size(lweight_subgraph, 1) < K
+        lweight_subgraph = pad_subgraph(lweight_subgraph, K);
     end
-    
-    if length(sample) < D  % add dummy nodes if not enough nodes extracted in subgraph
+    lweight_subgraph = lweight_subgraph(order, order);
+
+    % Vectorize the upper triangular part of the subgraph
+    sample = lweight_subgraph(triu(true(size(subgraph)), 1));
+
+    % Pad or trim `sample` to match expected dimension `D`
+    if length(sample) < D
         sample = [sample; zeros(D - length(sample), 1)];
+    elseif length(sample) > D
+        sample = sample(1:D);
     end
+
+    sample(1) = eps;  % Avoid empty sample
+end
+
+
+function padded_subgraph = pad_subgraph(subgraph, K)
+    % Add padding rows and columns to the subgraph
+    pad_size = K - size(subgraph, 1);
+    padded_subgraph = [subgraph, zeros(size(subgraph, 1), pad_size)];
+    padded_subgraph = [padded_subgraph; zeros(pad_size, K)];
 end
 
 
@@ -159,7 +147,7 @@ function N = neighbors(fringe, A);
 
         N_out = [i * ones(length(ij), 1), ij'];
         N_in = [ji, j * ones(length(ji), 1)];
-        
+
         N = unique([N_out; N_in], 'rows', 'stable');  % Preserve directionality
     end
 end
@@ -232,4 +220,8 @@ function order = g_label(subgraph, p_mo)
             % random labeling
             order = randperm(K);
     end
+
+    % Trim order to match subgraph dimensions
+    max_size = size(subgraph, 1);
+    order = order(1:max_size);
 end
