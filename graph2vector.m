@@ -28,6 +28,10 @@ function [data, label] = graph2vector(pos, neg, A, K)
     for i = 1: all_size
         ind = all(i, :);
         sample = subgraph2vector(ind, A, K);
+
+        % Ensure vector consistency with directed graph
+        assert(~issymmetric(sample), 'Error: Subgraph vector became undirected.');
+
         data(i, :) = sample;
 
         % Display progress
@@ -40,12 +44,18 @@ end
 
 
 function sample = subgraph2vector(ind, A, K)
-% Usage:
-%   1) To extract the enclosing subgraph for a link Aij (i = ind(1), j = ind(2))
-%   2) To impose a vertex ordering for the vertices of the enclosing subgraph using graph labeling
-%   3) To construct an adjacency matrix and output the reshaped vector
+%  Usage: to extract the enclosing subgraph for a link Aij (i = ind(1), j = ind(2))
+%         and impose a vertex ordering for the vertices of the enclosing subgraph using graph labeling
+%         and construct an adjacency matrix and output the reshaped vector
+% Input:
+%   - ind: indices of the link
+%   - A: the observed graph's adjacency matrix
+%   - K: the number of nodes in the enclosing subgraph
+% Output:
+%   - sample: the reshaped vector representation of the enclosing subgraph
 %
 %  *author: Muhan Zhang, Washington University in St. Louis
+%
 
     D = K * (K - 1) / 2;  % the length of output vector
 
@@ -56,25 +66,30 @@ function sample = subgraph2vector(ind, A, K)
     fringe = [ind];
     nodes = [ind(1); ind(2)];
     nodes_dist = [0; 0];
-    while 1
+
+    while true
         dist = dist + 1;
-        fringe = neighbors(fringe, A);
-        fringe = setdiff(fringe, links, 'rows');
+        fringe = neighbors(fringe, A);  % Get neighbors
+        fringe = setdiff(fringe, links, 'rows');  % Remove visited links
+
         if isempty(fringe)  % no more new neighbors, add dummy nodes
             subgraph = A(nodes, nodes);
             subgraph(1, 2) = 0;  % ensure subgraph patterns do not contain information about link existence
-            subgraph(2, 1) = 0;
+            % subgraph(2, 1) = 0;
             break
         end
+
+        % Add new nodes
         new_nodes = setdiff(fringe(:), nodes, 'rows');
         nodes = [nodes; new_nodes];
         nodes_dist = [nodes_dist; ones(length(new_nodes), 1) * dist];
         links = [links; fringe];
         links_dist = [links_dist; ones(size(fringe, 1), 1) * dist];
+        
         if size(nodes, 1) >= K  % nodes enough, extract subgraph
             subgraph = A(nodes, nodes);  % the unweighted subgraph
             subgraph(1, 2) = 0;  % ensure subgraph patterns do not contain information about link existence
-            subgraph(2, 1) = 0;
+            % subgraph(2, 1) = 0;
             break
         end
     end
@@ -116,6 +131,7 @@ function sample = subgraph2vector(ind, A, K)
             sample = plweight_subgraph(triu(logical(ones(size(subgraph))), 1));
             sample(1) = eps;  % avoid inf, and more important, avoid empty vector in libsvm format (directly deleting sample(1) results in libsvm format error)
     end
+    
     if length(sample) < D  % add dummy nodes if not enough nodes extracted in subgraph
         sample = [sample; zeros(D - length(sample), 1)];
     end
@@ -123,23 +139,40 @@ end
 
 
 function N = neighbors(fringe, A);
-%  Usage: find the neighbor links of all links in fringe from A
+%  Usage: to find the neighbors of the nodes in the fringe
+% Input:
+%   - fringe: the nodes to find neighbors
+%   - A: the observed graph's adjacency matrix
+% Output:
+%   - N: the neighbors of the nodes in the fringe
+%
 
     N = [];
-    for no = 1: size(fringe, 1)
+    for no = 1:size(fringe, 1)
         ind = fringe(no, :);
         i = ind(1);
         j = ind(2);
-        [~, ij] = find(A(i, :));
-        [ji, ~] = find(A(:, j));
-        N = [N; [i * ones(length(ij), 1), ij']; [ji, j * ones(length(ji), 1)]];
-        N = unique(N, 'rows', 'stable');  % eliminate repeated ones and keep in order
+
+        % Outgoing and incoming neighbors
+        [~, ij] = find(A(i, :));  % Outgoing edges from i
+        [ji, ~] = find(A(:, j));  % Incoming edges to j
+
+        N_out = [i * ones(length(ij), 1), ij'];
+        N_in = [ji, j * ones(length(ji), 1)];
+        
+        N = unique([N_out; N_in], 'rows', 'stable');  % Preserve directionality
     end
 end
 
 
 function order = g_label(subgraph, p_mo)
 %  Usage: impose a vertex order for a enclosing subgraph using graph labeling
+% Input:
+%   - subgraph: the enclosing subgraph
+%   - p_mo: the method to impose vertex order
+% Output:
+%   - order: the imposed vertex order
+%
 
     if nargin < 2
         p_mo = 7;  % default palette_wl
@@ -153,14 +186,13 @@ function order = g_label(subgraph, p_mo)
         disp('Debug: Subgraph is directed before g_label.');
     end
 
-    K = size(subgraph, 1);  % local variable
-
     % Graph Representation and Distance Calculation
     G = digraph(subgraph);  % Create a directed graph object
     dist_to_1 = distances(G, 1);  % Compute shortest paths from node 1
     dist_to_2 = distances(G, 2);  % Compute shortest paths from node 2
 
     % Handling Unreachable Nodes
+    K = size(subgraph, 1);  % local variable
     dist_to_1(isinf(dist_to_1)) = 2 * K;  % replace inf nodes (unreachable from 1 or 2) by an upperbound dist
     dist_to_2(isinf(dist_to_2)) = 2 * K;
 
@@ -195,7 +227,6 @@ function order = g_label(subgraph, p_mo)
         case 7
             % palette_wl with initial colors, break ties by nauty
             classes = palette_wl(subgraph, avg_dist_colors);
-            %classes = palette_wl(subgraph);  % no initial colors
             order = canon(full(subgraph), classes)';
         case 8
             % random labeling
