@@ -60,7 +60,7 @@ for f_idx = 1:length(foodweb_names)
         continue;
     end
     load(thisdatapath, 'net');  % Load only 'net' variable to save memory
-    numOfExperiment = 50;
+    numOfExperiment = 1;
     ratioTrain = 0.9;
     % method = [1, 2, 3, 4, 5, 6];  % 1: WLNM,  2: common-neighbor-based,  3: path-based, 4: random walk  5: latent-feature-based,  6: stochastic block model
     method = [1];
@@ -70,7 +70,7 @@ for f_idx = 1:length(foodweb_names)
     disp(['Processing dataset: ', dataname]);
 
     % Loop over values of k
-    for K = 5:15
+    for K = 10
         disp(['Processing with k = ', num2str(K)]);
 
         % Pre-allocate cell array to store log entries for each experiment

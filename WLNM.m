@@ -24,6 +24,9 @@ htest = triu(test, 1);
 
 [train_pos, train_neg, test_pos, test_neg] = sample_neg(htrain, htest, 2, 1, true);  % change the last argument to true to do link prediction on whole network
 
+%For later retrieve of the original (i, j) node pairs in test and match them to predictions
+test_pairs = [test_pos; test_neg];
+
 [train_data, train_label] = graph2vector(train_pos, train_neg, train, K);
 [test_data, test_label] = graph2vector(test_pos, test_neg, train, K);
 
@@ -100,43 +103,43 @@ switch model
         delete(sprintf('tempdata/test_log_scores_%d.asc', ith_experiment));
 end
 
-% calculate the AUC
+% --- Step 4: Find the best threshold using F1 score ---
 [~, ~, ~, auc] = perfcurve(test_label', scores', 1);
 
-% Set a range of threshold values to test for binary classification
 thresholds = 0.1:0.05:0.9;
-best_f1_score = 0;  % Initialize the best F1-score
-best_threshold = 0;  % Initialize the best threshold
+best_f1_score = 0;
+best_threshold = 0;
 
-% Iterate over different threshold values to find the best one
 for t = thresholds
     binary_predictions = scores' > t;
-    
-    % Calculate true positives, false positives, false negatives
+
+    % Compute confusion components
     true_positives = sum((binary_predictions == 1) & (test_label' == 1));
     false_positives = sum((binary_predictions == 1) & (test_label' == 0));
     false_negatives = sum((binary_predictions == 0) & (test_label' == 1));
 
-    % Calculate Precision, Recall, and F1-Score
+    % Precision
     if (true_positives + false_positives) > 0
         precision = true_positives / (true_positives + false_positives);
     else
         precision = 0;
     end
 
+    % Recall
     if (true_positives + false_negatives) > 0
         recall = true_positives / (true_positives + false_negatives);
     else
         recall = 0;
     end
 
+    % F1 Score
     if (precision + recall) > 0
         f1_score = 2 * (precision * recall) / (precision + recall);
     else
         f1_score = 0;
     end
 
-    % Update the best threshold if the current F1-score is better
+    % Save best threshold
     if f1_score > best_f1_score
         best_f1_score = f1_score;
         best_threshold = t;
@@ -145,7 +148,36 @@ for t = thresholds
     end
 end
 
-% Display the best threshold and corresponding metrics
-fprintf('Best Threshold: %.2f, Precision: %.4f, Recall: %.4f, F1-Score: %.4f\n', best_threshold, best_precision, best_recall, best_f1_score);
+% --- Step 5: Final binary predictions using best threshold ---
+binary_predictions = scores' > best_threshold;
+
+% Save node pairs used in test set (you must create this before calling graph2vector)
+% test_pairs = [test_pos; test_neg];
+
+predicted_links = test_pairs(binary_predictions == 1, :);  % links predicted as existing
+true_links      = test_pairs(test_label == 1, :);          % actual positive examples
+
+% Optional: confusion link sets
+TP_links = intersect(predicted_links, true_links, 'rows');
+FP_links = setdiff(predicted_links, true_links, 'rows');
+FN_links = setdiff(true_links, predicted_links, 'rows');
+
+% --- Step 6: Export results ---
+exp_id = sprintf('exp_%d_K_%d', ith_experiment, K);  % unique experiment ID
+results_dir = 'data/result/testing/';
+if ~exist(results_dir, 'dir')
+    mkdir(results_dir);
+end
+
+writematrix(predicted_links, fullfile(results_dir, ['predicted_links_' exp_id '.csv']));
+writematrix(true_links,      fullfile(results_dir, ['true_links_' exp_id '.csv']));
+writematrix(TP_links,        fullfile(results_dir, ['TP_links_' exp_id '.csv']));
+writematrix(FP_links,        fullfile(results_dir, ['FP_links_' exp_id '.csv']));
+writematrix(FN_links,        fullfile(results_dir, ['FN_links_' exp_id '.csv']));
+
+% Display metrics
+fprintf('Best Threshold: %.2f\n', best_threshold);
+fprintf('Precision: %.4f, Recall: %.4f, F1-Score: %.4f\n', best_precision, best_recall, best_f1_score);
 fprintf('AUC: %.4f\n', auc);
+
 end
