@@ -1,0 +1,111 @@
+Prey,Predator,PreyMass,PredatorMass
+Phytoplankton,Zooplankton,-999,-999
+Chroococcus limneticus,Kelicottia bostoniensis,3.94781034482759e-10,2e-08
+Cryptomonas sp. 1,Kellicottia sp.,2.03e-10,2e-08
+Chroococcus limneticus,Kelicottia longispina,3.94781034482759e-10,2.14204545454545e-08
+Cryptomonas sp. 1,Kelicottia longispina,2.03e-10,2.14204545454545e-08
+Selenastrum minutum,Trichocerca cylindrica,2.72e-10,3.07317073170732e-07
+Cryptomonas erosa,Eucentrum sp.,4.75e-11,3.18e-07
+Cryptomonas erosa,Lecane mira,4.75e-11,3.18e-07
+Chroococcus dispersus,Gastropus stylifer,2.39e-10,7.86393805309735e-07
+Trachelomonas sp.,Trichocerca multicrinis,1.75e-10,1.06410852713178e-06
+Cryptomonas erosa,Euchlanis sp.,4.75e-11,2.18e-06
+Cryptomonas erosa,Diaptomus sicilis,4.75e-11,5.79e-06
+Leptodora kindtii,Tropocyclops prasinus,0.00456,6.90399188092016e-06
+Trichocerca cylindrica,Tropocyclops prasinus,3.07317073170732e-07,6.90399188092016e-06
+Dinobryon sociale,Leptodiaptomus siciloides,6.41e-10,8.8e-06
+Arthrodesmus incus,Daphnia retrocurva,2.39e-10,1e-05
+Botryococcus braunii,Daphnia galeata,3.64e-11,1e-05
+Botryococcus braunii,Daphnia retrocurva,3.64e-11,1e-05
+Chrysocapsa planktonica,Daphnia catawba,1e-09,1e-05
+Crucigenia crucifera,Daphnia dubia,8.23e-11,1e-05
+Crucigenia rectangularis,Daphnia retrocurva,8.23e-11,1e-05
+Cryptomonas ovata,Daphnia catawba,4.75e-11,1e-05
+Diaptomus sicilis,Eucyclops agilis,5.79e-06,1e-05
+Diaptomus sicilis,Mesocyclops edax,5.79e-06,1e-05
+Euchlanis sp.,Mesocyclops edax,2.18e-06,1e-05
+Leptodora kindtii,Mesocyclops edax,0.00456,1e-05
+Cryptomonas erosa,Daphnia ambigua,4.75e-11,1e-05
+Cryptomonas erosa,Diaptomus leptopus,4.75e-11,1.01e-05
+Chromulina sp.,Daphnia rosea,3.03e-11,1.36e-05
+Chroococcus dispersus,Daphnia rosea,2.39e-10,1.36e-05
+Chroococcus dispersus,Diaptomus oregonensis,2.39e-10,1.44e-05
+Crucigenia rectangularis,Diaptomus minutus,8.23e-11,1.44e-05
+Crucigenia tetrapaedia,Diaptomus minutus,8.23e-11,1.44e-05
+Bosmina longirostris,Cyclops scutifer,1.55e-06,2.24e-05
+Colletheca mutabilis,Cyclops vernalis,3.21e-05,2.24e-05
+Kelicottia longispina,Orthocyclops modestus,2.14204545454545e-08,2.73285714285714e-05
+Chlamydomonas sp.,Colletheca mutabilis,1.74e-08,3.21e-05
+Cryptomonas ovata,Diaphanosoma birgei,4.75e-11,4.01e-05
+Chroococcus limneticus,Daphnia pulex,3.94781034482759e-10,5.60326923076923e-05
+Chrysocapsa planktonica,Daphnia pulex,1e-09,5.60326923076923e-05
+Cryptomonas erosa,Daphnia pulex,4.75e-11,5.60326923076923e-05
+Botryococcus braunii,Holopedium gibberum,3.64e-11,6.82874622356496e-05
+Coelosphaerium sp.,Holopedium gibberum,7.29e-11,6.82874622356496e-05
+Dinobryon sociale,Holopedium gibberum,6.41e-10,6.82874622356496e-05
+Dinobryon sp.,Holopedium gibberum,1.36e-09,6.82874622356496e-05
+Chydorus sphaericus,Epishura lacustris,2.18e-06,0.000122
+Cryptomonas erosa,copepod nauplii,4.75e-11,0.00181217204804805
+Eunotia denticulata,Polycentropus,-999,0.003758893
+Plectrocnemia conspersa,Polycentropus,0.003732982,0.003758893
+Cosmarium sp.,fish fry,6.1788e-10,0.016
+Daphnia galeata,fish fry,1e-05,0.016
+Diaptomus minutus,fish fry,1.44e-05,0.016
+Holopedium gibberum,fish fry,6.82874622356496e-05,0.016
+Micrasterias sp.,fish fry,2.94e-07,0.016
+Peridinium cinctum,fish fry,5.50666666666667e-08,0.016
+Polyarthra vulgaris,fish fry,4.77829787234043e-07,0.016
+Tabellaria fenestrata,fish fry,1.07e-09,0.016
+Trichocerca porcellus,fish fry,5.53e-07,0.016
+Chironomus dorsalis,Holocentropus picicornis,0.1472,0.1062
+Callicorixa praeusta,Sialis lutaria,0.1989,0.23130805088
+Lumbriculus variegatus,Sialis lutaria,1.6127,0.23130805088
+Polycentropus,Sialis lutaria,0.003758893,0.23130805088
+Ceratopogonidae,Colymbetes fusca,0.003322199,0.279789226
+Anisus leucostoma,Glossiphonia heteroclita,0.162594915,0.519660093
+Chironomidae indet.,Limnephilus marmoratus,0.0132989394181818,0.8076
+Chaoborys punctipennis,Phoxinys neogaeus,0.000259787234042553,1.17
+Holopedium gibberum,Phoxinys neogaeus,6.82874622356496e-05,1.17
+Callicorixa praeusta,Notonecta glauca,0.1989,1.4396
+Holocentropus picicornis,Notonecta glauca,0.1062,1.4396
+Limnephilus marmoratus,Notonecta glauca,0.8076,1.4396
+Daphnia pulex,Fundulus diaphanus,5.60326923076923e-05,5.19302325581395
+Asterionella formosa,Rhinichthys atratulus,5.12e-10,9.59565217391304
+Peridinium inconspicuum,Rhinichthys atratulus,5.6e-08,9.59565217391304
+Eucentrum sp.,Notemigonus crysoleucas,3.18e-07,12.8835164835165
+Keratella serrulata,Notemigonus crysoleucas,1e-08,12.8835164835165
+Chydorus sphaericus,Luxilus cornutus,2.18e-06,18.0117647058824
+Diaptomus minutus,Luxilus cornutus,1.44e-05,18.0117647058824
+Euastrum sp.,Luxilus cornutus,3.21e-09,18.0117647058824
+Ilyocryptus spinifer,Luxilus cornutus,1.14e-05,18.0117647058824
+Keratella serrulata,Luxilus cornutus,1e-08,18.0117647058824
+Alona affinis,Lepomis gibbosus,3.2e-06,22.700325732899
+Cyclops bicuspidatus,Lepomis gibbosus,1.5464e-05,22.700325732899
+Eucentrum sp.,Lepomis gibbosus,3.18e-07,22.700325732899
+Keratella cochlearis,Lepomis gibbosus,1e-08,22.700325732899
+Euchlanis triquetra,Pimephales promelas,1.67e-06,32.6163265306122
+Euastrum sp.,Semotilus atromaculatus,3.21e-09,35.5378091872792
+Kelicottia longispina,Semotilus atromaculatus,2.14204545454545e-08,35.5378091872792
+Leptodora kindtii,Semotilus atromaculatus,0.00456,35.5378091872792
+Polyarthra euryptera,Semotilus atromaculatus,1.09e-06,35.5378091872792
+Polyarthra remata,Semotilus atromaculatus,1.99e-07,35.5378091872792
+Daphnia retrocurva,Perca flavescens,1e-05,51.455497382199
+Diaptomus sicilis,Perca flavescens,5.79e-06,51.455497382199
+Epishura lacustris,Perca flavescens,0.000122,51.455497382199
+Euchlanis triquetra,Perca flavescens,1.67e-06,51.455497382199
+Detritus,Mbuna,-999,64.63104755
+Detritus,Utaka,-999,114.634014
+Phytoplankton,Utaka,-999,114.634014
+Cyclops bicuspidatus,Semotilus corporalis,1.5464e-05,177.396226415094
+Daphnia galeata,Semotilus corporalis,1e-05,177.396226415094
+Keratella cochlearis,Semotilus corporalis,1e-08,177.396226415094
+Leptodora kindtii,Semotilus corporalis,0.00456,177.396226415094
+Mesocyclops edax,Semotilus corporalis,1e-05,177.396226415094
+Polyarthra major,Semotilus corporalis,8.55e-07,177.396226415094
+Chaoborus edulis,Nkholokolo,-999,182.7283282
+Ascomorpha ecaudis,Coregonus artedii,3.18e-07,320
+Conochiloides dossuarius,Coregonus artedii,1.71224358974359e-06,320
+Bombe,Phalacrocorax spec,12250.01088,500
+Nkhono,Phalacrocorax spec,10,500
+Ictalurus nebulosus,Salmo rutta,73.0204545454545,624.5
+Nkhono,Nkunga,10,656.1390128
