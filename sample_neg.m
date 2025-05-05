@@ -18,86 +18,67 @@ function [train_pos, train_neg, test_pos, test_neg] = sample_neg(train, test, k,
     %                          neg testing links; train negative links
     %                          are sampled in the original way
     %  --Output--
-    %  column indices for four datasets
-    %%
+    %  -train_pos: a half train positive adjacency matrix
+    %  -train_neg: a half train negative adjacency matrix
+    %  -test_pos: a half test positive adjacency matrix
+    %  -test_neg: a half test positive adjacency matrix
+    %
+    %  Partly adapted from the codes of
+    %  Lu 2011, Link prediction in complex networks: A survey.
+    %  Muhan Zhang, Washington University in St. Louis
+    %
+    %  *author: Jorge Eduardo Castro Cruces, Queen Mary University of London
 
-    if nargin < 3
-        k = 1;
-    end
-
-    if nargin < 4
-        portion = 1;
-    end
-
-    if nargin < 5
-        evaluate_on_all_unseen = false;
-    end
-
-    n = size(train, 1);
     [i, j] = find(train);
     train_pos = [i, j];
-    train_size = length(i);
+    train_size = size(train_pos, 1);
+
     [i, j] = find(test);
     test_pos = [i, j];
-    test_size = length(i);
+    test_size = size(test_pos, 1);
 
-    if isempty(test)
-        net = train;
-    else
-        net = train + test;
-    end
+    % === Build full positive set ===
+    net = train + test;
+    assert(max(max(net)) <= 1, 'Train and test must not overlap');
 
-    assert(max(max(net)) == 1);  % ensure positive train, test not overlap
-
-    % Get all negative links (links that don't exist in the network)
-    neg_net = triu(-(net - 1), 1);
+    % === Find all possible negative links ===
+    neg_net = (net == 0);  % all non-links
+    neg_net = neg_net - diag(diag(neg_net));  % remove self-loops
     [i, j] = find(neg_net);
     neg_links = [i, j];
 
-    %% Modification to workaround if the negative links are not enough. [START]
-    % Check if we have enough negative links
-    total_neg_links_needed = k * (train_size + test_size);
-    available_neg_links = size(neg_links, 1);
-
-    if available_neg_links < total_neg_links_needed
-        warning('Not enough negative links available. Reducing the sample size.');
-        k = available_neg_links / (train_size + test_size);
+    % === Check for enough negatives ===
+    total_neg_needed = k * (train_size + test_size);
+    if size(neg_links, 1) < total_neg_needed
+        warning('Not enough negative links. Reducing k...');
+        k = floor(size(neg_links, 1) / (train_size + test_size));
     end
-    %% Modification to workaround if the negative links are not enough. [END]
 
-    % Sample negative links
+    % === Sample negatives ===
+    rng(42);  % reproducibility
     if evaluate_on_all_unseen
-        test_neg = neg_links;  % first let all unknown links be negative test links
-
-        % Randomly select train neg from all unknown links
+        test_neg = neg_links;
         perm = randperm(size(neg_links, 1));
-        train_neg = neg_links(perm(1: k * train_size), :);
-        test_neg(perm(1: k * train_size), :) = [];  % remove train negative links from test negative links
+        train_neg = neg_links(perm(1:k * train_size), :);
+        test_neg(perm(1:k * train_size), :) = [];  % remove train negs
     else
-        nlinks = size(neg_links, 1);
-        ind = randperm(nlinks);
-        if k * (train_size + test_size) <= nlinks
-            train_ind = ind(1: k * train_size);
-            test_ind = ind(k * train_size + 1: k * train_size + k * test_size);
-        else  % if negative links not enough, divide them proportionally
-            ratio = train_size / (train_size + test_size);
-            train_ind = ind(1: floor(ratio * nlinks));
-            test_ind = ind(floor(ratio * nlinks) + 1: end);
-        end
-        train_neg = neg_links(train_ind, :);
-        test_neg = neg_links(test_ind, :);
+        perm = randperm(size(neg_links, 1));
+        total_needed = k * (train_size + test_size);
+        selected = neg_links(perm(1:total_needed), :);
+        train_neg = selected(1:k * train_size, :);
+        test_neg = selected(k * train_size + 1:end, :);
     end
 
-    % Sample a portion of the links if specified
-    if portion < 1  % only sample a portion of train and test links (for fitting into memory)
+    % === Apply portion filtering (if needed) ===
+    if portion < 1
         train_pos = train_pos(1:ceil(size(train_pos, 1) * portion), :);
         train_neg = train_neg(1:ceil(size(train_neg, 1) * portion), :);
-        test_pos = test_pos(1:ceil(size(test_pos, 1) * portion), :);
-        test_neg = test_neg(1:ceil(size(test_neg, 1) * portion), :);
-    elseif portion > 1  % portion is an integer, number of selections
+        test_pos  = test_pos(1:ceil(size(test_pos, 1) * portion), :);
+        test_neg  = test_neg(1:ceil(size(test_neg, 1) * portion), :);
+    elseif portion > 1
         train_pos = train_pos(1:portion, :);
         train_neg = train_neg(1:portion, :);
-        test_pos = test_pos(1:portion, :);
-        test_neg = test_neg(1:portion, :);
+        test_pos  = test_pos(1:portion, :);
+        test_neg  = test_neg(1:portion, :);
     end
 end

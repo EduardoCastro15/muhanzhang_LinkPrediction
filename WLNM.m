@@ -1,24 +1,35 @@
 function [auc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(dataname, train, test, K, taxonomy, mass)
     %  Usage: the main program for Weisfeiler-Lehman Neural Machine (WLNM)
     %  --Input--
+    %  -dataname: name of the food web
     %  -train: a sparse matrix of training links (1: link, 0: otherwise)
     %  -test: a sparse matrix of testing links (1: link, 0: otherwise)
     %  -K: number of vertices in an enclosing subgraph
-    %  -ith_experiment: exp index, for parallel computing
+    %  -taxonomy: vector of species names
+    %  -mass: vector of species masses
     %  --Output--
     %  -auc: the AUC score of WLNM
+    %  -best_threshold: the best threshold for classification
+    %  -best_precision: the best precision for classification
+    %  -best_recall: the best recall for classification
+    %  -best_f1_score: the best F1 score for classification
     %
-    %  *author: Muhan Zhang, Washington University in St. Louis
-    %%
-    htrain = triu(train, 1);  % half train adjacency matrix
-    htest = triu(test, 1);
+    %  Partly adapted from the codes of
+    %  Lu 2011, Link prediction in complex networks: A survey.
+    %  Muhan Zhang, Washington University in St. Louis
+    %
+    %  *author: Jorge Eduardo Castro Cruces, Queen Mary University of London
+
+    useParallel = false;            % Flag to enable or disable parallel pool
+    htrain = train;                 % NEW: keep directed structure
+    htest = test;
 
     % Sample negative links
     [train_pos, train_neg, test_pos, test_neg] = sample_neg(htrain, htest, 2, 1, true);
 
     % Encode subgraphs into vectors
-    [train_data, train_label] = graph2vector(train_pos, train_neg, train, K);
-    [test_data, test_label] = graph2vector(test_pos, test_neg, train, K);
+    [train_data, train_label] = graph2vector(train_pos, train_neg, train, K, useParallel);
+    [test_data, test_label] = graph2vector(test_pos, test_neg, train, K, useParallel);
 
     % Train feedforward neural network
     layers = [imageInputLayer([K*(K-1)/2 1 1], 'Normalization','none')
@@ -42,6 +53,8 @@ function [auc, best_threshold, best_precision, best_recall, best_f1_score] = WLN
     % Predict probabilities
     [~, scores] = classify(net, reshape(test_data', K*(K-1)/2, 1, 1, size(test_data, 1)));
     scores(:, 1) = [];
+    disp(scores);
+    disp(size(scores));
 
     % Compute AUC
     [~, ~, ~, auc] = perfcurve(test_label', scores', 1);

@@ -1,147 +1,146 @@
 %  Main Program. Partly adapted from the codes of
 %  Lu 2011, Link prediction in complex networks: A survey.
+%  Muhan Zhang, Washington University in St. Louis
 %
-%  *author: Muhan Zhang, Washington University in St. Louis
-%
-%rng(100);
+%  *author: Jorge Eduardo Castro Cruces, Queen Mary University of London
 
 %% Configuration
-useParallel = true;         % Flag to enable or disable parallel pool
-kRange = 10;              % Define the interval of K values to execute
+useParallel = false;         % Flag to enable or disable parallel pool
+kRange = 10;                % Define the interval of K values to execute
 numOfExperiment = 1;
-ratioTrain = 0.9;
+ratioTrain = 0.8;
 
 %% Load food web list from a CSV file or a predefined list
 foodweb_list = readtable('data/foodwebs_mat/foodweb_metrics_small.csv');
 foodweb_names = foodweb_list.Foodweb;
 
-%% Set up logging
+%% Set up logging directories
 log_dir = 'data/result/';
 terminal_log_dir = 'data/result/terminal_logs/';
-if ~exist(log_dir, 'dir')
-    mkdir(log_dir);
-end
+if ~exist(log_dir, 'dir'); mkdir(log_dir); end
+if ~exist(terminal_log_dir, 'dir'); mkdir(terminal_log_dir); end
 
-% Start parallel pool if the flag is enabled
+%% Start parallel pool if enabled
+pool_created = false;  % NEW: track if we open the pool ourselves
 if useParallel
-    % Start parallel pool (initialize once for all datasets)
     if isempty(gcp('nocreate'))
         poolobj = parpool(feature('numcores'));
+        pool_created = true;
         % parpool('local', str2double(getenv('NSLOTS')));
     end
 end
 
-% Iterate over all food webs in the list
+%% Iterate over all food webs in the list
 for f_idx = 1:length(foodweb_names)
-    dataname = strvcat(foodweb_names{f_idx});  % Get the current food web name
-    log_file = strcat(log_dir, dataname, '.txt');  % Create a log file for each food web
+    dataname = foodweb_names{f_idx};
+    log_file = fullfile(log_dir, strcat(dataname, '_results.csv'));
 
-    % Check if log file already exists and contains data
-    if isfile(log_file) && dir(log_file).bytes > 0
+    % Create CSV header if the file does not exist
+    if ~isfile(log_file)
+        fid = fopen(log_file, 'w');
+        fprintf(fid, 'Iteration,AUC,ElapsedTime,K,TrainRatio,BestThreshold,Precision,Recall,F1Score\n');
+        fclose(fid);
+    else
         disp(['Skipping ', dataname, ' as it already has a log file.']);
-        continue;  % Skip to the next food web if the log file already exists and has content
+        continue;
     end
 
-    fileID = fopen(log_file, 'a');  % Open the log file for appending text
-
-    % Set up diary to log command window output to a file
+    % Set up terminal log file
     diary_file = fullfile(terminal_log_dir, strcat('terminal_log_', dataname, '.txt'));
-    diary(diary_file);  % Start logging to diary
-    
-    % Add a header to the log file if it doesn't exist
-    if ftell(fileID) == 0  % Check if file is empty
-        fprintf(fileID, '|========================================================================================================================================================|\n');
-        fprintf(fileID, '|    Iteration   |      AUC       |  Time Elapsed  |Encoded subgraph|   Train ratio  |    Threshold   |    Precision   |     Recall     |     F1-Score   |\n');
-        fprintf(fileID, '|                |                |   (hh:mm:ss)   |      (K)       |       %%        |                |                |                |                |\n');
-        fprintf(fileID, '|========================================================================================================================================================|\n');
-    end
-    
-    %%Load data
+    diary(diary_file);
+
+    %% Load data
     addpath(genpath('utils'));
     datapath = 'data/foodwebs_mat/';
     thisdatapath = fullfile(datapath, strcat(dataname, '.mat'));
 
-    % Check if the .mat file exists
     if ~isfile(thisdatapath)
         disp(['File not found: ', thisdatapath]);
-        fclose(fileID);
         diary off;
         continue;
     end
+
     load(thisdatapath, 'net', 'taxonomy', 'mass');
     disp(['Processing dataset: ', dataname]);
 
-    % Loop over values of k
+    % Loop over values of K
     for K = kRange
-        disp(['Processing with k = ', num2str(K)]);
+        disp(['Processing with K = ', num2str(K)]);
 
-        % Pre-allocate cell array to store log entries for each experiment
-        log_entries = cell(numOfExperiment, 1);
+        % Pre-allocate struct array
+        results = repmat(struct('AUC', 0, 'TimeElapsed', '', 'K', K, ...
+                                'TrainRatio', ratioTrain, 'Threshold', 0, ...
+                                'Precision', 0, 'Recall', 0, 'F1Score', 0), ...
+                                numOfExperiment, 1);
 
         if useParallel
             parfor ith_experiment = 1:numOfExperiment
-                log_entries{ith_experiment} = processExperiment(ith_experiment, dataname, net, taxonomy, mass, ratioTrain, K);
+                results(ith_experiment) = processExperiment(ith_experiment, dataname, net, taxonomy, mass, ratioTrain, K);
             end
         else
             for ith_experiment = 1:numOfExperiment
-                log_entries{ith_experiment} = processExperiment(ith_experiment, dataname, net, taxonomy, mass, ratioTrain, K);
+                results(ith_experiment) = processExperiment(ith_experiment, dataname, net, taxonomy, mass, ratioTrain, K);
             end
         end
 
-        % Write accumulated log entries to file after the parfor loop
+        % Append to CSV log file
         for i = 1:numOfExperiment
-            fprintf(fileID, '%s', log_entries{i});
+            fid = fopen(log_file, 'a');
+            fprintf(fid, '%d,%.4f,%s,%d,%.0f,%.2f,%.4f,%.4f,%.4f\n', ...
+                i, results(i).AUC, results(i).TimeElapsed, results(i).K, ...
+                results(i).TrainRatio * 100, results(i).Threshold, ...
+                results(i).Precision, results(i).Recall, results(i).F1Score);
+            fclose(fid);
         end
     end
 
-    % Log summary results for the current dataset
-    avg_auc = mean(cellfun(@(x) sscanf(x, '|%*d | %f', 1), log_entries));
-    var_auc = var(cellfun(@(x) sscanf(x, '|%*d | %f', 1), log_entries));
-    disp(['Average AUC for dataset ', dataname, ': ', num2str(avg_auc)]);
-    disp(['Variance: ', num2str(var_auc)]);
-    
-    % Clean up memory
-    fclose(fileID);
     diary off;
-    clear net aucOfallPredictor; % Clear large variables after each dataset
+    clear net;
 end
-    
-% Close parallel pool after all datasets
-if useParallel && exist('poolobj', 'var')
-    delete(poolobj);
+
+% Close parallel pool if we opened it
+if useParallel && pool_created
+    delete(gcp('nocreate'));
 end
 disp(['Execution finished at: ', datestr(now)]);
 
-%% Helper Function for Experiment Processing
-function log_entry = processExperiment(ith_experiment, dataname, net, taxonomy, mass, ratioTrain, K)
-    % Initialize temporary variables inside the loop
-    tempauc = 0;
+
+%% Helper Function
+function result = processExperiment(ith_experiment, dataname, net, taxonomy, mass, ratioTrain, K)
+    % Usage: Train and test the network using WLNM and log the results
+    % --Input--
+    % - ith_experiment: experiment index, for parallel computing
+    % - dataname: name of the food web
+    % - net: adjacency matrix representing the network
+    % - taxonomy: vector of species names
+    % - mass: vector of species masses
+    % - ratioTrain: proportion of edges to keep in the training set
+    % - K: number of vertices in an enclosing subgraph
+    % --Output--
+    % - result: a struct containing the AUC, elapsed time, K, train ratio, threshold, precision, recall, and F1 score
+
     iteration_start_time = tic;
-    best_threshold = 0;
-    best_precision = 0;
-    best_recall = 0;
-    best_f1_score = 0;
 
-    if mod(ith_experiment, 10) == 0
-        disp([num2str(ith_experiment), '%... ']);
-    end
-
-    % Divide into train/test without enforcing symmetry
+    % Train/test split (preserve directionality)
     [train, test] = DivideNet(net, ratioTrain);
-    train = sparse(train);
+    train = sparse(train);  % do NOT add train + train'
     test = sparse(test);
-    train = spones(train + train');
-    test = spones(test + test');
 
-    % WLNM Method
-    disp('WLNM...');
-    [tempauc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(dataname, train, test, K, taxonomy, mass);
+    % WLNM
+    disp(['Experiment ', num2str(ith_experiment), ': Running WLNM...']);
+    [auc, best_threshold, best_precision, best_recall, best_f1_score] = WLNM(dataname, train, test, K, taxonomy, mass);
 
-    % Measure time taken for this iteration
-    iteration_time = toc(iteration_start_time);  % Time in seconds
-    elapsed_time_str = datestr(seconds(iteration_time), 'HH:MM:SS');
+    % Time formatting
+    elapsed_time_str = datestr(seconds(toc(iteration_start_time)), 'HH:MM:SS');
 
-    % Store log entry
-    log_entry = sprintf('|           %4d |       %8.4f |       %6s |         %6d |        %6d%% |           %.2f |         %.4f |         %.4f |         %.4f |\n', ...
-                        ith_experiment, tempauc, elapsed_time_str, K, ratioTrain * 100, best_threshold, best_precision, best_recall, best_f1_score);
+    % Return as structured result
+    result = struct( ...
+        'AUC', auc, ...
+        'TimeElapsed', elapsed_time_str, ...
+        'K', K, ...
+        'TrainRatio', ratioTrain, ...
+        'Threshold', best_threshold, ...
+        'Precision', best_precision, ...
+        'Recall', best_recall, ...
+        'F1Score', best_f1_score);
 end

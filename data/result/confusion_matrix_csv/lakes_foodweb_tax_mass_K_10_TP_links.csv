@@ -1,61 +1,74 @@
 Prey,Predator,PreyMass,PredatorMass
-Chroococcus limneticus,Keratella cochlearis,3.94781034482759e-10,1e-08
-Gymnodinium palustre,Tropocyclops prasinus,9.39e-09,6.90399188092016e-06
-Keratella cochlearis,Tropocyclops prasinus,1e-08,6.90399188092016e-06
-Ceriodaphnia quadrangula,Mesocyclops edax,5.85e-06,1e-05
-Conochiloides unicornis,Eucyclops agilis,3.18e-07,1e-05
-Cosmarium sp.,Daphnia retrocurva,6.1788e-10,1e-05
-Cyclops vernalis,Eucyclops agilis,2.24e-05,1e-05
-Diaptomus leptopus,Eucyclops agilis,1.01e-05,1e-05
-Beauchampiella eudactylota,Cyclops vernalis,2.25e-05,2.24e-05
-Ceriodaphnia quadrangula,Cyclops vernalis,5.85e-06,2.24e-05
-Achnanthes austriaca var helvetica,Tanypodinae,-999,0.00036948
-Chironomidae indet.,Tanypodinae,0.0132989394181818,0.00036948
-Diatoma hyemale var mesodon,Tanypodinae,-999,0.00036948
-Eunotia denticulata,Oligochaetae,-999,0.000651763
-Aulacoseira distans var nivalis,Leuctra nigra,-999,0.000843239
-Brachysira brebissonii,Leuctra nigra,-999,0.000843239
-Eunotia curvata,Leuctra nigra,-999,0.000843239
+Acantholeberis curvirostris,Tropocyclops prasinus,4.01e-05,6.90399188092016e-06
+Bosmina longirostris,Tropocyclops prasinus,1.55e-06,6.90399188092016e-06
+Chydorus bicornutus,Tropocyclops prasinus,2.18e-06,6.90399188092016e-06
+Alona costata,Mesocyclops edax,4.42e-06,1e-05
+Ascomorpha ecaudis,Eucyclops agilis,3.18e-07,1e-05
+Chydorus sphaericus,Eucyclops agilis,2.18e-06,1e-05
+Colletheca mutabilis,Eucyclops agilis,3.21e-05,1e-05
+Colletheca mutabilis,Mesocyclops edax,3.21e-05,1e-05
+Cyclops scutifer,Eucyclops agilis,2.24e-05,1e-05
+Conochiloides dossuarius,Cyclops varians rubellus,1.71224358974359e-06,2.22604651162791e-05
+Acantholeberis curvirostris,Cyclops vernalis,4.01e-05,2.24e-05
+Keratella testudo,Orthocyclops modestus,1.07936507936508e-08,2.73285714285714e-05
+Eunotia incisa,Tanypodinae,-999,0.00036948
+Eunotia rhomboidea,Tanypodinae,-999,0.00036948
+Plectrocnemia conspersa,Tanypodinae,0.003732982,0.00036948
+Aulacoseira distans var nivalis,Oligochaetae,-999,0.000651763
+Diatoma sp. 3,Oligochaetae,-999,0.000651763
+Eunotia vanheurckii var intermedia,Oligochaetae,-999,0.000651763
+Diatoma sp. 6,Leuctra nigra,-999,0.000843239
 Eunotia rhomboidea,Leuctra nigra,-999,0.000843239
-Fragilaria vaucheriae,Leuctra nigra,-999,0.000843239
-Achnanthes austriaca var helvetica,Capnia vidua,-999,0.001413961
-Aulacoseira distans var nivalis,Nemoura cambrica,-999,0.001995597
-Diatoma sp. 1,Nemoura cambrica,-999,0.001995597
-Eunotia denticulata,Nemoura cambrica,-999,0.001995597
-Achnanthes marginulata,Plectrocnemia conspersa,-999,0.003732982
-Eunotia incisa,Polycentropus,-999,0.003758893
+Frustulia rhomboides var saxonica,Leuctra nigra,-999,0.000843239
+Frustulia rhomboides var viridula,Leuctra nigra,-999,0.000843239
+Brachysira brebissonii,Capnia vidua,-999,0.001413961
+Eunotia sp.,Nemoura cambrica,-999,0.001995597
+Chironomidae indet.,Plectrocnemia conspersa,0.0132989394181818,0.003732982
+Diatoma sp. 4,Plectrocnemia conspersa,-999,0.003732982
+Diatoma sp. 6,Plectrocnemia conspersa,-999,0.003732982
+Diatoma sp. 3,Polycentropus,-999,0.003758893
 Ceratium carolinianum,Leptodora kindtii,2.57e-09,0.00456
-Cyclops vernalis,Leptodora kindtii,2.24e-05,0.00456
-Daphnia dubia,Leptodora kindtii,1e-05,0.00456
-Kelicottia bostoniensis,Leptodora kindtii,2e-08,0.00456
-Colletheca mutabilis,fish fry,3.21e-05,0.016
-Cyclops bicuspidatus,fish fry,1.5464e-05,0.016
-Gastropus stylifer,fish fry,7.86393805309735e-07,0.016
-Synchaeta sp.,fish fry,1.10665789473684e-05,0.016
-Acanthocyclops vernalis,Sialis lutaria,0.0022,0.23130805088
-Diatoma hyemale var mesodon,Sialis lutaria,-999,0.23130805088
-Eunotia vanheurckii var intermedia,Sialis lutaria,-999,0.23130805088
-Fragilaria vaucheriae,Sialis lutaria,-999,0.23130805088
+Daphnia longiremis,Leptodora kindtii,1e-05,0.00456
+Keratella serrulata,fish fry,1e-08,0.016
+Lecane sp.,fish fry,3.18e-07,0.016
+Leptodora kindtii,fish fry,0.00456,0.016
+Mesocyclops edax,fish fry,1e-05,0.016
+Trichocerca cylindrica,fish fry,3.07317073170732e-07,0.016
+Trichocerca multicrinis,fish fry,1.06410852713178e-06,0.016
+Diatoma sp. 2,Halesus radiatus,-999,0.033610343
+Eunotia sp.,Halesus radiatus,-999,0.033610343
+Frustulia rhomboides var saxonica,Halesus radiatus,-999,0.033610343
+Enchytraidae sp.,Hydroporus erythrocephalus,0.0085,0.0474
+Corynoneura scutellata,Polycelis tenuis,0.0086,0.0506
+Agabus sturmii,Enallagma cyathigerum,0.2822,0.0728
+Hesperocorixa sahlbergi,Holocentropus picicornis,0.2141,0.1062
+Chironomidae indet.,Oreodytes davisii,0.0132989394181818,0.170431436
+Oligochaetae,Oreodytes davisii,0.000651763,0.170431436
+Diatoma sp. 3,Sialis lutaria,-999,0.23130805088
 Frustulia rhomboides var saxonica,Sialis lutaria,-999,0.23130805088
-Chironomidae indet.,Illybius fuliginosus,0.0132989394181818,0.65
-Corixa dentipes,Illybius fuliginosus,0.9669,0.65
-Acanthocyclops vernalis,Lestes sponsa,0.0022,0.7813
 Callicorixa praeusta,Sympetrum scoticum,0.1989,0.8435
-Cyclops varians rubellus,Phoxinys neogaeus,2.22604651162791e-05,1.17
-Diaphanosoma leuchtenbergianum,Umbra limi,2.24e-06,1.44785714285714
-Conochiloides unicornis,Osmerus mordax,3.18e-07,4.85185185185185
-Cyclops vernalis,Fundulus diaphanus,2.24e-05,5.19302325581395
-Conochiloides dossuarius,Notemigonus crysoleucas,1.71224358974359e-06,12.8835164835165
-Daphnia parvula,Notemigonus crysoleucas,1e-05,12.8835164835165
-Keratella crassa,Pimephales promelas,1.89e-06,32.6163265306122
-Bosmina longirostris,Semotilus atromaculatus,1.55e-06,35.5378091872792
-Chydorus sphaericus,Semotilus atromaculatus,2.18e-06,35.5378091872792
-Conochiloides unicornis,Semotilus atromaculatus,3.18e-07,35.5378091872792
-Ascomorpha ecaudis,Perca flavescens,3.18e-07,51.455497382199
-Kelicottia bostoniensis,Perca flavescens,2e-08,51.455497382199
-Oreodytes davisii,Salmo trutta,0.170431436,79.8104926
-Coregonus artedii,Micropterus dolomieui,320,193
-Rhinichthys atratulus,Salmo rutta,9.59565217391304,624.5
-Catostomus commersoni,Salvelinus namaycush,280.489361702128,1390.36842105263
-Lepomis gibbosus,Salvelinus fontinalis large,22.700325732899,1401.34285714286
-Chisawasawa,Mlamba,107.2847952,6552.913821
+Corixa dentipes,Sympetrum scoticum,0.9669,0.8435
+Hesperocorixa linnei,Notonecta glauca,0.2064,1.4396
+Kelicottia bostoniensis,Osmerus mordax,2e-08,4.85185185185185
+Leptodora kindtii,Osmerus mordax,0.00456,4.85185185185185
+Corixa dentipes,Dytiscus marginalis,0.9669,5.0192
+Chydorus sphaericus,Fundulus diaphanus,2.18e-06,5.19302325581395
+Daphnia ambigua,Luxilus cornutus,1e-05,18.0117647058824
+Diaptomus sicilis,Luxilus cornutus,5.79e-06,18.0117647058824
+Colletheca mutabilis,Pimephales promelas,3.21e-05,32.6163265306122
+Acantholeberis curvirostris,Semotilus atromaculatus,4.01e-05,35.5378091872792
+Cyclops vernalis,Semotilus atromaculatus,2.24e-05,35.5378091872792
+Daphnia galeata,Semotilus atromaculatus,1e-05,35.5378091872792
+Eucyclops agilis,Semotilus atromaculatus,1e-05,35.5378091872792
+Cyclops scutifer,Perca flavescens,2.24e-05,51.455497382199
+Euchlanis sp.,Perca flavescens,2.18e-06,51.455497382199
+Gastropus hyptopus,Perca flavescens,9.49230769230769e-07,51.455497382199
+Leptodora kindtii,Perca flavescens,0.00456,51.455497382199
+Plectrocnemia conspersa,Salmo trutta,0.003732982,79.8104926
+Fundulus diaphanus,Salvelinus fontinalis small,5.19302325581395,220.657142857143
+Luxilus cornutus,Salvelinus fontinalis small,18.0117647058824,220.657142857143
+Pimephales notatus,Salvelinus fontinalis small,3.15,220.657142857143
+Ascomorpha ecaudis,Coregonus artedii,3.18e-07,320
+Notemigonus crysoleucas,Salvelinus fontinalis large,12.8835164835165,1401.34285714286
+Perca flavescens,Salvelinus fontinalis large,51.455497382199,1401.34285714286
+Ascomorpha ecaudis,Coregonus clupeaformis,3.18e-07,1875

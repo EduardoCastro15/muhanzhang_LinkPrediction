@@ -1,78 +1,51 @@
-function [ train test ] = DivideNet( net, ratioTrain)
-    % Usage: Divide the network into training and testing sets
-    % --Input--
-    % - net: adjacency matrix representing the network
-    % - ratioTrain: proportion of edges to keep in the training set
-    % --Output--
-    % - train: adjacency matrix of training links (1: link, 0: otherwise)
-    % - test: adjacency matrix of testing links (1: link, 0: otherwise)
+function [train, test] = DivideNet(net, ratioTrain)
+    % Divide a directed network into training and testing sets,
+    % preserving directionality and removing self-loops.
     %
-    %  *problem identified: duplicate test links due to non-triangular matrix
-    %%
+    % --Input--
+    %   net:        n x n binary adjacency matrix (directed)
+    %   ratioTrain: fraction of links to retain in training set (e.g., 0.9)
+    %
+    % --Output--
+    %   train:      directed training adjacency matrix
+    %   test:       directed testing adjacency matrix
+    %
+    %  Partly adapted from the codes of
+    %  Lu 2011, Link prediction in complex networks: A survey.
+    %  Muhan Zhang, Washington University in St. Louis
+    %
+    %  *author: Jorge Eduardo Castro Cruces, Queen Mary University of London
 
-    % Convert adjacency matrix to upper triangular form (no self-loops)
-    net = triu(net) - diag(diag(net));
+    % Extract all directed links (i → j)
+    [i, j] = find(net);
+    linklist = [i, j];
 
-    % Calculate the number of edges for the test set
-    num_testlinks = ceil((1-ratioTrain) * nnz(net));
+    % Remove self-loops (where source == target)
+    self_loops = (i == j);
+    linklist(self_loops, :) = [];
 
-    % Identify all edges in the network and store them in linklist
-    [xindex, yindex] = find(net);
-    linklist = [xindex yindex];
+    % Count remaining valid links
+    total_links = size(linklist, 1);
+    num_test = ceil((1 - ratioTrain) * total_links);
 
-    clear xindex yindex;  % Remove unnecessary variables
+    % Reproducible random shuffle
+    rng(42);  % Fixed seed for consistent experiments
+    perm = randperm(total_links);
+    test_links = linklist(perm(1:num_test), :);
+    train_links = linklist(perm(num_test + 1:end), :);
 
-    % Initialize the test set as a sparse matrix of the same size as net
-    test = sparse(size(net,1), size(net,2));
+    % Initialize adjacency matrices
+    n = size(net, 1);
+    train = sparse(n, n);
+    test = sparse(n, n);
 
-    % Randomly select edges to add to the test set until the desired count is reached
-    while (nnz(test) < num_testlinks)
-        if length(linklist) <= 2
-            break;
-        end
-
-        % Randomly choose an edge from the link list
-        index_link = ceil(rand(1) * length(linklist));
-
-        % Identify the nodes connected by the selected edge
-        uid1 = linklist(index_link, 1);
-        uid2 = linklist(index_link, 2);
-        net(uid1, uid2) = 0;  % Temporarily remove the edge from the network
-
-        %% Check if nodes uid1 and uid2 remain reachable
-        tempvector = net(uid1, :);  % Get nodes reachable from uid1 in one step
-        sign = 0;  % Default: edge cannot be removed
-
-        % Calculate reachability within two steps
-        uid1TOuid2 = tempvector * net + tempvector;
-        if uid1TOuid2(uid2) > 0
-            sign = 1;  % Mark as reachable
-        else
-            % Check reachability for more than two steps until stable
-            while (nnz(spones(uid1TOuid2) - tempvector) ~= 0)
-                tempvector = spones(uid1TOuid2);
-                uid1TOuid2 = tempvector * net + tempvector;
-                if uid1TOuid2(uid2) > 0
-                    sign = 1;  % Mark as reachable
-                    break;
-                end
-            end
-        end
-
-        % Modified: Allow all selected edges in the test set, regardless of connectivity
-        sign = 1;
-
-        %% Add edge to the test set or restore it in the training network
-        if sign == 1  % Edge can be deleted
-            linklist(index_link, :) = [];  % Remove edge from linklist
-            test(uid1, uid2) = 1;  % Mark as test edge
-        else
-            linklist(index_link, :) = [];
-            net(uid1, uid2) = 1;  % Restore edge in the network
-        end
+    % Assign training links
+    for k = 1:size(train_links, 1)
+        train(train_links(k, 1), train_links(k, 2)) = 1;
     end
 
-    % Generate the symmetric training and testing adjacency matrices
-    train = net + net';
-    test = test + test';
+    % Assign testing links
+    for k = 1:size(test_links, 1)
+        test(test_links(k, 1), test_links(k, 2)) = 1;
+    end
 end
